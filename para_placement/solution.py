@@ -20,7 +20,7 @@ class Configuration(BaseObject):
         self.place = place
         self.latency = latency
 
-        # computing_resource & throughput
+        # computing resource
         self.computing_resource = {}
         for i in range(len(sfc.vnf_list)):
             vnf = sfc.vnf_list[i]
@@ -30,8 +30,8 @@ class Configuration(BaseObject):
         # throughput
         self.throughput = {}
         for i in range(len(route) - 1):
-            self.throughput["%d-%d" % (route[i], route[i + 1])] = sfc.throughput
-            self.throughput["%d-%d" % (route[i + 1], route[i])] = sfc.throughput
+            self.throughput["%d:%d" % (route[i], route[i + 1])] = sfc.throughput
+            self.throughput["%d:%d" % (route[i + 1], route[i])] = sfc.throughput
 
     def __str__(self):
         return self.place.__str__()
@@ -154,6 +154,14 @@ def classic_ilp(model: Model) -> Result:
         sfc.constraints_var = LpVariable.dicts("configurations", list(range(len(configurations[i]))), 0, 1,
                                                LpContinuous)
         sfc_list[i] = sfc
+
+    # mjt added
+    for sfc in model.sfc_list:
+        sfc.configurations = generate_configuration_list(model.topo, sfc)
+        sfc.configurations_vars = LpVariable.dicts("configuration", list(range(len(sfc.configurations))))
+        for configuration in sfc.configurations:
+            configuration.x = LpVariable("", 0, 1)
+
     # configurations_var = LpVariable.dicts("configuration", list(range(len())))
 
     return Result([], [])  # todo
