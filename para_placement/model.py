@@ -11,12 +11,48 @@ class BaseObject(object):
 
 
 class VNF(BaseObject):
-    def __init__(self, latency: float, computing_resource: int):
+    def __init__(self, latency: float, computing_resource: int, read_fields: set, write_fields: set):
         self.latency = latency
         self.computing_resource = computing_resource
+        self.read_fields = read_fields
+        self.write_fields = write_fields
 
     def __str__(self):
         return "(%f, %d)" % (self.latency, self.computing_resource)
+
+    @staticmethod
+    def parallelizable_analysis(vnf1, vnf2):
+        """Analysis whether two vnf can execute parallelism.
+        
+        Returns:
+        0 for packet copy
+        1 for no need packet copy
+        -1 for cannot parallelism
+        """
+        nf1_read_fields = vnf1.read_fields
+        nf1_write_fields = vnf1.write_fields
+        nf2_read_fields = vnf2.read_fields
+        nf2_write_fields = vnf2.write_fields
+
+        #analyse read after write
+        for fields1 in nf1_write_fields:
+            for fields2 in nf2_read_fields:
+                if (fields1 == fields2):
+                    return -1  # cannot parallelism
+
+        #analyse write after read
+        for fields1 in nf1_read_fields:
+            for fields2 in nf2_write_fields:
+                if (fields1 == fields2):
+                    return 0  # need packet copy
+
+        #analyse write after write
+        for fields1 in nf1_write_fields:
+            for fields2 in nf2_write_fields:
+                if (fields1 == fields2):
+                    return 0  # need packet copy
+
+        return 1  # perfect parallelism
 
 
 class SFC(BaseObject):
