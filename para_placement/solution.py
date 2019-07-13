@@ -3,6 +3,7 @@ import heapq
 from pulp import *
 
 from para_placement.model import *
+from para_placement.topology import *
 
 
 class Result(object):
@@ -11,17 +12,32 @@ class Result(object):
         self.x_rx = x_rs
 
 
-class Configuration(object):
+class Configuration(BaseObject):
     def __init__(self, sfc: SFC, route: List[int], place: List[int], latency: int):
         # todo
         self.sfc = sfc
         self.route = route
         self.place = place
         self.latency = latency
-        # self.throughput = throughput
-        # self.computing_resource = computing_resource
+
+        # computing_resource & throughput
+        self.computing_resource = {}
+        for i in range(len(sfc.vnf_list)):
+            vnf = sfc.vnf_list[i]
+            pos = route[place[i]]
+            self.computing_resource[pos] = vnf.computing_resource
+
+        # throughput
+        self.throughput = {}
+        for i in range(len(route) - 1):
+            self.throughput["%d-%d" % (route[i], route[i + 1])] = sfc.throughput
+            self.throughput["%d-%d" % (route[i + 1], route[i])] = sfc.throughput
+
+    def __str__(self):
+        return self.place.__str__()
 
 
+# find the shortest distance to every point
 def dijkstra(topo: nx.Graph, s: int) -> {}:  # todo
     ret = {}
     heap = [(0, s)]
@@ -40,6 +56,7 @@ def dijkstra(topo: nx.Graph, s: int) -> {}:  # todo
     return ret
 
 
+# dfs + latency constraint (+ dijkstra)
 def generate_route_list(topo: nx.Graph, sfc: SFC):
     s = sfc.s
     d = sfc.d
@@ -54,47 +71,69 @@ def generate_route_list(topo: nx.Graph, sfc: SFC):
 
         if latency + shortest_distance[route[-1]] > sfc.latency:
             continue
-        elif route[-1] == d:
+
+        if route[-1] == d:
             route_set.append((route, latency))
         else:
-            adjs = topo[route[-1]]
-            for adj in adjs:
-                if adj not in route:
+            adjacent = topo[route[-1]]
+            for index in adjacent:
+                if index not in route:
                     new_route = route[:]
-                    new_route.append(adj)
-                    stack.append((new_route, latency + adjs[adj]['latency']))
+                    new_route.append(index)
+                    stack.append((new_route, latency + adjacent[index]['latency']))
 
     print("Size of path set: %d" % len(route_set))
 
     return route_set
 
 
-def generate_configuration(topo: nx.Graph, sfc: SFC) -> List[Configuration]:
-    route_list = generate_route_list(topo, sfc)
-    vnf_latency = 0
-    for vnf in sfc.vnf_list:
-        vnf_latency += vnf.latency
+# bfs
+def generate_configuration(route: List[int], latency: int, sfc: SFC) -> List[Configuration]:
+    latency += sfc.vnf_latency_sum
+    if latency <= sfc.latency:
+        m = len(sfc.vnf_list)
+        n = len(route)
 
-    configuration_set = []
-    n = len(sfc.vnf_list)
-    for route, latency in route_list:
-        latency += vnf_latency
-        if latency > sfc.latency:
-            continue
+        placement_set = []
+        # if n in generate_configuration.cache and m in generate_configuration.cache[n]:
+        #     placement_set = generate_configuration.cache[n][m]
+        # else:
         queue = [[0]]
-        m = len(route)
 
         while queue:
             cur = queue.pop()
-            if len(cur) == n + 1:
+            if len(cur) == m + 1:
                 cur.pop(0)
-                configuration_set.append(Configuration(sfc, route, cur, latency))
-                pass
+                placement_set.append(cur)
             else:
-                for i in range(cur[-1], m):
+                for i in range(cur[-1], n):
                     add = cur[:]
                     add.append(i)
                     queue.append(add)
+
+            # add results to the cache
+            # if n not in generate_configuration.cache:
+            #     generate_configuration.cache[n] = {}
+            # generate_configuration.cache[n][m] = placement_set
+
+        configuration_set = []
+        for placement in placement_set:
+            configuration_set.append(Configuration(sfc, route, placement, latency))
+        return configuration_set
+
+
+generate_configuration.cache = {}
+
+
+# all configuration for one sfc
+def generate_configuration_list(topo: nx.Graph, sfc: SFC) -> List[Configuration]:
+    route_list = generate_route_list(topo, sfc)
+
+    configuration_set = []
+    for route, latency in route_list:
+        result = generate_configuration(route, latency, sfc)
+        if result:
+            configuration_set.extend(result)
 
     print("Size of configuration set: %d" % len(configuration_set))
 
@@ -103,7 +142,21 @@ def generate_configuration(topo: nx.Graph, sfc: SFC) -> List[Configuration]:
 
 def classic_ilp(model: Model) -> Result:
     problem = LpProblem("VNF Placement", LpMaximize)
-    return Result([], [])
+
+    total_configuration = 0
+    configurations = []
+    sfc_list = []
+    for i in range(len(model.sfc_list)):
+        configurations[i] = generate_configuration_list(model.topo, model.sfc_list[i])
+        total_configuration += len(configurations[i])
+        sfc = object
+        sfc.var = LpVariable("sfc var %d" % i, 0, 1)
+        sfc.constraints_var = LpVariable.dicts("configurations", list(range(len(configurations[i]))), 0, 1,
+                                               LpContinuous)
+        sfc_list[i] = sfc
+    # configurations_var = LpVariable.dicts("configuration", list(range(len())))
+
+    return Result([], [])  # todo
 
 
 def greedy(model: Model) -> Result:

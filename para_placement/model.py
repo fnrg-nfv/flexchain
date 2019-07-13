@@ -27,6 +27,10 @@ class SFC(BaseObject):
         self.s = s
         self.d = d
 
+        self.vnf_latency_sum: float = 0
+        for vnf in vnf_list:
+            self.vnf_latency_sum += vnf.latency
+
     def __str__(self):
         return "({}, {}, {}, {}->{})".format(self.vnf_list, self.latency, self.throughput, self.s, self.d)
 
