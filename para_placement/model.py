@@ -20,12 +20,13 @@ class VNF(BaseObject):
 
 
 class SFC(BaseObject):
-    def __init__(self, vnf_list: List[VNF], latency: float, throughput: int, s: int, d: int):
+    def __init__(self, vnf_list: List[VNF], latency: float, throughput: int, s: int, d: int, idx: int):
         self.vnf_list = vnf_list
         self.latency = latency
         self.throughput = throughput
         self.s = s
         self.d = d
+        self.idx = idx
 
         self.vnf_latency_sum: float = 0
         for vnf in vnf_list:
@@ -62,12 +63,14 @@ def generate_sfc_list(topo: nx.Graph, size=100):
             vnf_list.append(VNF(latency=random.uniform(0.045, 0.3), computing_resource=random.randint(500, 1000)))
         s = random.randint(1, nodes_len - 1)
         d = random.randint(1, nodes_len - 1)
+        while d == s:
+            d = random.randint(1, nodes_len - 1)
         # TODO: the throughput requirement is very important
-        ret.append(SFC(vnf_list, latency=random.randint(10, 30), throughput=random.randint(32, 128), s=s, d=d))
+        ret.append(SFC(vnf_list, latency=random.randint(10, 30), throughput=random.randint(32, 128), s=s, d=d, idx=i))
     return ret
 
 
-def generate_model(topo_size: int = 100, sfc_size: int = 100):
+def generate_model(topo_size: int = 100, sfc_size: int = 100) -> Model:
     topo = topology.generate_randomly(topo_size)
     sfc_list = generate_sfc_list(topo, sfc_size)
     return Model(topo, sfc_list)

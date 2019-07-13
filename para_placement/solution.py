@@ -3,7 +3,6 @@ import heapq
 from pulp import *
 
 from para_placement.model import *
-from para_placement.topology import *
 
 
 class Result(object):
@@ -13,25 +12,29 @@ class Result(object):
 
 
 class Configuration(BaseObject):
-    def __init__(self, sfc: SFC, route: List[int], place: List[int], latency: int):
+    def __init__(self, sfc: SFC, route: List[int], place: List[int], latency: int, idx: string):
         # todo
         self.sfc = sfc
         self.route = route
         self.place = place
         self.latency = latency
+        self.name = "{}_{}".format(sfc.idx, idx)
 
         # computing resource
         self.computing_resource = {}
         for i in range(len(sfc.vnf_list)):
             vnf = sfc.vnf_list[i]
             pos = route[place[i]]
-            self.computing_resource[pos] = vnf.computing_resource
+            if pos not in self.computing_resource:
+                self.computing_resource[pos] = 0
+            self.computing_resource[pos] += vnf.computing_resource
 
         # throughput
-        self.throughput = {}
+        self.throughput = []
         for i in range(len(route) - 1):
-            self.throughput["%d:%d" % (route[i], route[i + 1])] = sfc.throughput
-            self.throughput["%d:%d" % (route[i + 1], route[i])] = sfc.throughput
+            start = max(route[i], route[i + 1])
+            end = min(route[i], route[i + 1])
+            self.throughput.append("%d:%d" % (start, end))
 
     def __str__(self):
         return self.place.__str__()
@@ -60,7 +63,10 @@ def dijkstra(topo: nx.Graph, s: int) -> {}:  # todo
 def generate_route_list(topo: nx.Graph, sfc: SFC):
     s = sfc.s
     d = sfc.d
+
     shortest_distance = dijkstra(topo, d)
+    if s not in shortest_distance:
+        return []
 
     stack = [([s], 0)]
 
@@ -88,7 +94,7 @@ def generate_route_list(topo: nx.Graph, sfc: SFC):
 
 
 # bfs
-def generate_configuration(route: List[int], latency: int, sfc: SFC) -> List[Configuration]:
+def generate_configuration(route: List[int], latency: int, sfc: SFC, idx: int) -> List[Configuration]:
     latency += sfc.vnf_latency_sum
     if latency <= sfc.latency:
         m = len(sfc.vnf_list)
@@ -117,8 +123,8 @@ def generate_configuration(route: List[int], latency: int, sfc: SFC) -> List[Con
             # generate_configuration.cache[n][m] = placement_set
 
         configuration_set = []
-        for placement in placement_set:
-            configuration_set.append(Configuration(sfc, route, placement, latency))
+        for idx2, placement in enumerate(placement_set):
+            configuration_set.append(Configuration(sfc, route, placement, latency, "{}_{}".format(idx,idx2)))
         return configuration_set
 
 
@@ -129,40 +135,72 @@ generate_configuration.cache = {}
 def generate_configuration_list(topo: nx.Graph, sfc: SFC) -> List[Configuration]:
     route_list = generate_route_list(topo, sfc)
 
-    configuration_set = []
-    for route, latency in route_list:
-        result = generate_configuration(route, latency, sfc)
+    configuration_list = []
+    for idx, item in enumerate(route_list):
+        route, latency = item
+        result = generate_configuration(route, latency, sfc, idx)
         if result:
-            configuration_set.extend(result)
+            configuration_list.extend(result)
 
-    print("Size of configuration set: %d" % len(configuration_set))
+    print("Size of configuration set: %d" % len(configuration_list))
 
-    return configuration_set
+    return configuration_list
+
+
+epsilon = 0
 
 
 def classic_ilp(model: Model) -> Result:
+    print("Start Classic LP")
     problem = LpProblem("VNF Placement", LpMaximize)
 
-    total_configuration = 0
-    configurations = []
-    sfc_list = []
-    for i in range(len(model.sfc_list)):
-        configurations[i] = generate_configuration_list(model.topo, model.sfc_list[i])
-        total_configuration += len(configurations[i])
-        sfc = object
-        sfc.var = LpVariable("sfc var %d" % i, 0, 1)
-        sfc.constraints_var = LpVariable.dicts("configurations", list(range(len(configurations[i]))), 0, 1,
-                                               LpContinuous)
-        sfc_list[i] = sfc
-
-    # mjt added
+    print("Variables init...")
     for sfc in model.sfc_list:
         sfc.configurations = generate_configuration_list(model.topo, sfc)
-        sfc.configurations_vars = LpVariable.dicts("configuration", list(range(len(sfc.configurations))))
         for configuration in sfc.configurations:
-            configuration.x = LpVariable("", 0, 1)
+            configuration.var = LpVariable(configuration.name, 0, 1, LpContinuous)
 
-    # configurations_var = LpVariable.dicts("configuration", list(range(len())))
+    print("Objective function init...")
+    # Objective function
+    problem += lpSum(
+        (configuration.var * (1 - epsilon * configuration.latency) for configuration in sfc.configurations) for
+        sfc in model.sfc_list), "Total number of accept requests minus total latency"
+
+    # Constraints
+    print("Subjective function init...")
+    # basic constraints
+    print("Basic...")
+    for sfc in model.sfc_list:
+        problem += lpSum(configuration.var for configuration in sfc.configurations) <= 1.0, "Basic_{}".format(sfc.idx)
+
+    # computing resource constraints
+    print("Computing resource...")
+    for index, info in model.topo.nodes.data():
+        problem += lpSum(configuration.var * configuration.computing_resource[index]
+                         for sfc in model.sfc_list
+                         for configuration in sfc.configurations
+                         if index in configuration.computing_resource) <= info['computing_resource'], "CR_{}".format(
+            index)
+
+    # throughput constraints
+    print("Throughput...")
+    for start, end, info in model.topo.edges.data():
+        problem += lpSum(configuration.var * sfc.throughput
+                         for sfc in model.sfc_list
+                         for configuration in sfc.configurations
+                         if "{}:{}".format(start, end) in configuration.throughput) <= info[
+                       'bandwidth'], "TP_{}_{}".format(start, end)
+    valid_sfc = 0
+    for sfc in model.sfc_list:
+        if len(sfc.configurations) > 0:
+            valid_sfc += 1
+    print("\nValid sfc: {}\n".format(valid_sfc))
+
+    print("Problem Objective:")
+    print(problem.objective)
+    LpSolverDefault.msg = 1
+    print("Problem Solving...")
+    problem.solve()
 
     return Result([], [])  # todo
 

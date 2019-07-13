@@ -4,7 +4,7 @@ from para_placement.solution import *
 
 def main():
     print("Placement Main")
-    model = generate_model(32, 10)
+    model = generate_model(32, 100)
     print(model)
 
     classic_ilp(model)
