@@ -1,6 +1,8 @@
+import pickle
 import random
 from typing import List
 import networkx as nx
+import matplotlib.pyplot as plt
 
 from para_placement import topology
 
@@ -80,6 +82,19 @@ class Model(BaseObject):
     def __str__(self):
         return "TOPO-nodes:{}\nTOPO-edges:{}\nSFCs:{}".format(self.topo.nodes.data(), self.topo.edges.data(),
                                                               self.sfc_list)
+
+    def save(self, file_name='model_data.pkl'):
+        with open(file_name, 'wb') as output:
+            pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
+
+    @staticmethod
+    def load(file_name='model_data.pkl'):
+        with open(file_name, 'rb') as input_file:
+            return pickle.load(input_file)
+
+    def draw_topo(self):
+        nx.draw(self.topo, with_labels=True)
+        plt.show()
 
 
 # random generate 100 service function chains
