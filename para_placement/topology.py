@@ -16,7 +16,7 @@ fig.set_tight_layout(False)
 # edge latency: 2~5 ms
 # edge bandwidth: 1000~10000 Mbps todo
 
-def generate_randomly(size=100):
+def generate_randomly(size: int = 100):
     topo = nx.Graph()
     for i in range(size):
         topo.add_node(i, computing_resource=random.randint(4000, 8000))

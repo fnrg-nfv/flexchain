@@ -11,7 +11,7 @@ class BaseObject(object):
 
 
 class VNF(BaseObject):
-    def __init__(self, latency: float, computing_resource: int, read_fields: set, write_fields: set):
+    def __init__(self, latency: float, computing_resource: int, read_fields: set = None, write_fields: set = None):
         self.latency = latency
         self.computing_resource = computing_resource
         self.read_fields = read_fields
@@ -34,22 +34,22 @@ class VNF(BaseObject):
         nf2_read_fields = vnf2.read_fields
         nf2_write_fields = vnf2.write_fields
 
-        #analyse read after write
+        # analyse read after write
         for fields1 in nf1_write_fields:
             for fields2 in nf2_read_fields:
-                if (fields1 == fields2):
+                if fields1 == fields2:
                     return -1  # cannot parallelism
 
-        #analyse write after read
+        # analyse write after read
         for fields1 in nf1_read_fields:
             for fields2 in nf2_write_fields:
-                if (fields1 == fields2):
+                if fields1 == fields2:
                     return 0  # need packet copy
 
-        #analyse write after write
+        # analyse write after write
         for fields1 in nf1_write_fields:
             for fields2 in nf2_write_fields:
-                if (fields1 == fields2):
+                if fields1 == fields2:
                     return 0  # need packet copy
 
         return 1  # perfect parallelism
@@ -85,6 +85,7 @@ class Model(BaseObject):
 # random generate 100 service function chains
 # number of vnf: 5~10
 # vnf computing resource: 500~1000
+# vnf latency: 0.2~2 ms
 # sfc latency demand: 10~30 ms
 # sfc throughput demand: 32~128 Mbps todo
 
@@ -96,13 +97,13 @@ def generate_sfc_list(topo: nx.Graph, size=100):
         vnf_list = []
         for j in range(n):
             # TODO: the latency of VNF could be larger, and the computing_resource is very important
-            vnf_list.append(VNF(latency=random.uniform(0.045, 0.3), computing_resource=random.randint(500, 1000)))
+            vnf_list.append(VNF(latency=random.uniform(0.2, 2), computing_resource=random.randint(400, 800)))
         s = random.randint(1, nodes_len - 1)
         d = random.randint(1, nodes_len - 1)
         while d == s:
             d = random.randint(1, nodes_len - 1)
         # TODO: the throughput requirement is very important
-        ret.append(SFC(vnf_list, latency=random.randint(10, 30), throughput=random.randint(32, 128), s=s, d=d, idx=i))
+        ret.append(SFC(vnf_list, latency=random.randint(10, 30), throughput=random.randint(100, 1000), s=s, d=d, idx=i))
     return ret
 
 

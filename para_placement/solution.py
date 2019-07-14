@@ -18,7 +18,7 @@ class Configuration(BaseObject):
         self.place = place
         self.latency = latency
         self.name = "{}_{}".format(sfc.idx, idx)
-        self.l = 9999999  #used to find optimal situation
+        self.l = 9999999  # used to find optimal situation
 
         # computing resource
         self.computing_resource = {}
@@ -40,25 +40,26 @@ class Configuration(BaseObject):
         return self.place.__str__()
 
     def para_latency_analysis(self):
-        """Get the optimal paralle execution situation using backtracking
+        """
+        Get the optimal parallel execution situation using backtracking
         """
         optimal_para = []
         vnfs = [self.sfc.vnf_list[0]]
-        for i in range(len(self.place)-1):
-            if(self.place[i] == self.place[i+1]):
-                vnfs.append(self.sfc.vnf_list[i+1])
+        for i in range(len(self.place) - 1):
+            if self.place[i] == self.place[i + 1]:
+                vnfs.append(self.sfc.vnf_list[i + 1])
             else:
-                if(len(vnfs)>1):
+                if len(vnfs) > 1:
                     result = []
                     self.l = 999999
                     self.backtracking_analysis(0, vnfs, [], result)
                     optimal_para.extend(result)
                     optimal_para.append(0)
-                    vnfs = [self.sfc.vnf_list[i+1]]
+                    vnfs = [self.sfc.vnf_list[i + 1]]
                 else:
                     optimal_para.append(0)
-                    vnfs = [self.sfc.vnf_list[i+1]]
-        if(len(vnfs)>1):
+                    vnfs = [self.sfc.vnf_list[i + 1]]
+        if len(vnfs) > 1:
             result = []
             self.l = 999999
             self.backtracking_analysis(0, vnfs, [], result)
@@ -66,22 +67,29 @@ class Configuration(BaseObject):
         return optimal_para
 
     def backtracking_analysis(self, index, vnfs, analysis_result, result):
-        '''for vnf in vnfs, find the optimal parallelism situation and save resule in result.
+        """
+        for vnf in vnfs, find the optimal parallelism situation and save resule in result.
         len(result) = len(vnfs) - 1
         result[i] indicates vnfs[i] and vnfs[i+1] whether execute parallelism. 0 for no, 1 for yes
-        '''
-        if (index == len(vnfs) - 1):
-            #analysis end, compute latency
+
+        :param index:
+        :param vnfs:
+        :param analysis_result:
+        :param result:
+        :return:
+        """
+        if index == len(vnfs) - 1:
+            # analysis end, compute latency
             l = 0
             for vnf in vnfs:
                 l = l + vnf.latency
-            if (l < self.l):
-                #find a better situation
+            if l < self.l:
+                # find a better situation
                 self.l = l
                 result = analysis_result
             return
-        if (VNF.parallelizable_analysis(vnfs[index], vnfs[index + 1]) >= 0):
-            #parallelizable
+        if VNF.parallelizable_analysis(vnfs[index], vnfs[index + 1]) >= 0:
+            # parallelizable
             vnf1 = vnfs.pop(index)
             vnf2 = vnfs.pop(index)
             new_vnf = VNF(max(vnf1.latency, vnf2.latency),
@@ -98,15 +106,16 @@ class Configuration(BaseObject):
             analysis_result.append(0)
             self.backtracking_analysis(index + 1, vnfs, analysis_result,
                                        result)
-            analysis_result.pop() 
+            analysis_result.pop()
         else:
             analysis_result.append(0)
             self.backtracking_analysis(index + 1, vnfs, analysis_result,
                                        result)
-            analysis_result.pop() 
+            analysis_result.pop()
+
+        # find the shortest distance to every point
 
 
-# find the shortest distance to every point
 def dijkstra(topo: nx.Graph, s: int) -> {}:  # todo
     ret = {}
     heap = [(0, s)]
@@ -191,7 +200,7 @@ def generate_configuration(route: List[int], latency: int, sfc: SFC, idx: int) -
 
         configuration_set = []
         for idx2, placement in enumerate(placement_set):
-            configuration_set.append(Configuration(sfc, route, placement, latency, "{}_{}".format(idx,idx2)))
+            configuration_set.append(Configuration(sfc, route, placement, latency, "{}_{}".format(idx, idx2)))
         return configuration_set
 
 
@@ -199,8 +208,7 @@ generate_configuration.cache = {}
 
 
 # all configuration for one sfc
-def generate_configuration_list(topo: nx.Graph,
-                                sfc: SFC) -> List[Configuration]:
+def generate_configuration_list(topo: nx.Graph, sfc: SFC) -> List[Configuration]:
     route_list = generate_route_list(topo, sfc)
 
     configuration_list = []
@@ -215,7 +223,7 @@ def generate_configuration_list(topo: nx.Graph,
     return configuration_list
 
 
-epsilon = 0
+epsilon = 0.01
 
 
 def classic_ilp(model: Model) -> Result:
@@ -264,10 +272,9 @@ def classic_ilp(model: Model) -> Result:
             valid_sfc += 1
     print("\nValid sfc: {}\n".format(valid_sfc))
 
-    print("Problem Objective:")
-    print(problem.objective)
+    # print("Problem Objective:\n", problem.objective)
     LpSolverDefault.msg = 1
-    print("Problem Solving...")
+    print("\nProblem Solving...")
     problem.solve()
 
     return Result([], [])  # todo
