@@ -55,8 +55,8 @@ def classic_lp(model: Model):
     # total number of valid sfc
     print("\nValid sfc: {}\n".format(len(list(filter(lambda s: len(s.configurations) > 0, model.sfc_list)))))
 
+    # Problem solving
     print("Problem Solving...")
-    # LpSolverDefault.msg = 1
     problem.solve()
     print("Objective Value: {}".format(value(problem.objective)))
 
@@ -91,32 +91,6 @@ def lp_to_ilp(model: Model):
             sfc.accepted_configuration = None
 
     print(evaluate(model))
-
-    # rounding
-    # count = 0
-    # while count < 200:
-    #     count += 1
-    #     print("Rounding...{}".format(count))
-    #
-    #     for sfc in model.sfc_list:
-    #         x_sum = sum(configuration.var.varValue for configuration in sfc.configurations)
-    #         if random.uniform(0, 1) <= x_sum:  # accepted
-    #             choose_random = random.uniform(0, 1)
-    #             for configuration in sfc.configurations:
-    #                 if configuration.var.varValue > 0:
-    #                     partial = configuration.var.varValue / x_sum
-    #                     if choose_random <= partial:
-    #                         sfc.accepted_configuration = configuration
-    #                         break
-    #                     else:
-    #                         choose_random -= partial
-    #         else:  # rejected
-    #             sfc.accepted_configuration = None
-    #
-    #     if evaluate(model):
-    #         print("Accepted")
-    #         break
-    #     print("Rejected")
 
     print(objective_value(model, epsilon))
 
@@ -158,7 +132,7 @@ def place_sfc_with_parallelism_concern(topo, sfc, ranked_path):
 
 
 def greedy(model: Model):
-    """Greedy thought: 
+    """Greedy thought:
         Sort sfc's latency in increasing order
         For every sfc, sort s to d path's latency in increasing order
         Find the first path whose resources can fulfil sfc requirement
@@ -180,7 +154,7 @@ def greedy(model: Model):
         vnf_process_latency = 0
         for vnf in sfc.vnf_list:
             vnf_process_latency += vnf.latency
-        route_list = _generate_route_list(topo, sfc)
+        route_list = generate_configurations_for_one_sfc(topo, sfc)
         ranked_path = sort_route_list_by_capacity_divide_latency(topo, route_list)
 
         for route in ranked_path:

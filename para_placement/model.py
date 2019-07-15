@@ -170,9 +170,11 @@ class Configuration(BaseObject):
         return "route: {}\tplace: {}\tcomputing_resource: {}".format(self.route.__str__(), self.place.__str__(),
                                                                      self.computing_resource.__str__())
 
+    para = False
+
     # latency (normal & para)
-    def get_latency(self, para: bool = False) -> float:
-        if para:
+    def get_latency(self) -> float:
+        if Configuration.para:
             return 1  # todo
 
         return self._route_latency + self.sfc.vnf_latency_sum
