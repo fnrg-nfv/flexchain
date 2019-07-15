@@ -12,7 +12,7 @@ fig.set_tight_layout(False)
 
 # random generate topo with 100 nodes
 # node CPU capacity: 4000~8000 Mhz
-# node connectivity: 0.05
+# node connectivity: 0.1
 # edge latency: 2~5 ms
 # edge bandwidth: 1000~10000 Mbps todo
 

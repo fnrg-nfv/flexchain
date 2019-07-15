@@ -67,7 +67,12 @@ def classic_lp(model: Model):
     print("Accept sfc in LP: {}".format(len(model.sfc_list)))
 
     # output the lp result
-    model.output_result("lp_result.txt")
+    with open("lp_result.txt", "w+") as output:
+        for sfc in model.sfc_list:
+            for configuration in sfc.configurations:
+                output.write(
+                    "C {}: {}\t{}\n".format(configuration.name, configuration.var.varValue, configuration))
+        output.close()
 
 
 # find the near optimal solution from LP
@@ -141,7 +146,7 @@ def greedy(model: Model):
 
     # print("Start greedy")
     # num_of_accept_sfcs = 0
-    # greedy_result = []
+    greedy_result = []
     # print("Sort sfcs...")
     # sfcs = model.sfc_list
     # sort_sfcs_by_latency(sfcs)
@@ -190,11 +195,9 @@ def greedy(model: Model):
     #     if sfc_reject == 1:
     #         greedy_result.append((sfc, 0, [], []))
 
-
     topo = model.topo
     sfcs = model.sfc_list
     sort_sfcs_by_computing_resources(sfcs)
-
 
     print("Handle finished...")
     print("Result:", greedy_result)  # TODO: show result detail

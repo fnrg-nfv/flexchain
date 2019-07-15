@@ -8,7 +8,6 @@ def main():
     # model.save(file_name="model_data.pkl")
     # model = Model.load(file_name="model_data.pkl")
 
-
     # model.save(file_name="solved_model.pkl")
     model = Model.load(file_name="model_data.pkl")
     model.draw_topo()

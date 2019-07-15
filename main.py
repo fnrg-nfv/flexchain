@@ -4,7 +4,7 @@ from para_placement.solution import *
 
 def main():
     print("Placement Main")
-    # model = generate_model(32, 100)
+    # model = generate_model(32, 200)
     # model.save(file_name="model_data.pkl")
     # model = Model.load(file_name="model_data.pkl")
 
