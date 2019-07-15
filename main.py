@@ -16,8 +16,6 @@ def main():
     print(model)
     model.draw_topo()
 
-    # greedy(model)
-
     lp_to_ilp(model)
 
 

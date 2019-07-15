@@ -1,5 +1,6 @@
 from pulp import *
 
+from para_placement.evaluation import evaluate, objective_value
 from para_placement.model import *
 
 epsilon = 0.03
@@ -11,9 +12,11 @@ def classic_lp(model: Model):
 
     print("Variables init...")
     for sfc in model.sfc_list:
-        sfc.configurations = generate_configuration_list(model.topo, sfc)
-        # filter configurations whose latency is legal
+        sfc.configurations = generate_configurations_for_one_sfc(model.topo, sfc)
+
+        # filter configurations whose latency is legal IMPORTANT
         sfc.configurations = list(filter(lambda c: c.get_latency() <= sfc.latency, sfc.configurations))
+
         for configuration in sfc.configurations:
             configuration.var = LpVariable(configuration.name, 0, 1, LpContinuous)
 
@@ -48,11 +51,9 @@ def classic_lp(model: Model):
                          for configuration in sfc.configurations
                          if "{}:{}".format(start, end) in configuration.edges) <= info[
                        'bandwidth'], "TP_{}_{}".format(start, end)
-    valid_sfc = 0
-    for sfc in model.sfc_list:
-        if len(sfc.configurations) > 0:
-            valid_sfc += 1
-    print("\nValid sfc: {}\n".format(valid_sfc))
+
+    # total number of valid sfc
+    print("\nValid sfc: {}\n".format(len(list(filter(lambda s: len(s.configurations) > 0, model.sfc_list)))))
 
     print("Problem Solving...")
     # LpSolverDefault.msg = 1
@@ -66,12 +67,7 @@ def classic_lp(model: Model):
     print("Accept sfc in LP: {}".format(len(model.sfc_list)))
 
     # output the lp result
-    with open("result.txt", "w+") as output:
-        for sfc in model.sfc_list:
-            for configuration in sfc.configurations:
-                if configuration.var.varValue > 0:
-                    output.write("C {}: {}\t{}\n".format(configuration.name, configuration.var.varValue, configuration))
-        output.close()
+    model.output_result("lp_result.txt")
 
 
 # find the near optimal solution from LP
@@ -79,8 +75,11 @@ def lp_to_ilp(model: Model):
     for sfc in model.sfc_list:
         sfc.configurations.sort(key=lambda c: c.var.varValue, reverse=True)  # varValue, latency, cr ratio
     # model.sfc_list.sort(key=lambda s: s.configurations[0].get_normal_latency())  # sfc sorted by configuration latency
+
     # sfc sorted by computing resource ratio
     model.sfc_list.sort(key=lambda s: s.configurations[0].computing_resource_ratio(model.topo))
+
+    # choose a configuration (maybe none) for each sfc
     for sfc in model.sfc_list:
         passed = False
         for configuration in sfc.configurations:
@@ -119,39 +118,9 @@ def lp_to_ilp(model: Model):
     #         break
     #     print("Rejected")
 
-    with open("result1.txt", "w+") as output:
-        for sfc in filter(lambda s: s.accepted_configuration is not None, model.sfc_list):
-            output.write(
-                "C {}: {}\t{}\n".format(sfc.accepted_configuration.name, sfc.accepted_configuration.var.varValue,
-                                        sfc.accepted_configuration))
-        output.close()
+    print(objective_value(model, epsilon))
 
-
-def evaluate(model: Model) -> bool:
-    accepted_sfc_list = list(filter(lambda s: s.accepted_configuration is not None, model.sfc_list))
-    # print("Evaluating... Accepted sfc: {}".format(len(accepted_sfc_list)))
-
-    for sfc in accepted_sfc_list:
-        if sfc.accepted_configuration.get_latency() > sfc.latency:
-            return False
-
-    # computing resource constraints
-    for index, info in model.topo.nodes.data():
-        usage = sum(sfc.accepted_configuration.computing_resource[index]
-                    for sfc in accepted_sfc_list
-                    if index in sfc.accepted_configuration.computing_resource)
-        if usage > info['computing_resource']:
-            return False
-
-    # throughput constraints
-    for start, end, info in model.topo.edges.data():
-        usage = sum(sfc.throughput
-                    for sfc in accepted_sfc_list
-                    if "{}:{}".format(start, end) in sfc.accepted_configuration.edges)
-        if usage > info['bandwidth']:
-            return False
-
-    return True
+    model.output_result("ilp_result.txt")
 
 
 # Greedy
@@ -211,7 +180,7 @@ def greedy(model: Model):
         vnf_process_latency = 0
         for vnf in sfc.vnf_list:
             vnf_process_latency += vnf.latency
-        route_list = generate_route_list(topo, sfc)
+        route_list = _generate_route_list(topo, sfc)
         ranked_path = sort_route_list_by_capacity_divide_latency(topo, route_list)
 
         for route in ranked_path:

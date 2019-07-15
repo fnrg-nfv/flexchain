@@ -102,6 +102,14 @@ class Model(BaseObject):
         nx.draw(self.topo, with_labels=True)
         plt.show()
 
+    def output_result(self, filename="result.txt"):
+        with open(filename, "w+") as output:
+            for sfc in filter(lambda s: s.accepted_configuration is not None, self.sfc_list):
+                output.write(
+                    "C {}: {}\t{}\n".format(sfc.accepted_configuration.name, sfc.accepted_configuration.var.varValue,
+                                            sfc.accepted_configuration))
+            output.close()
+
 
 # random generate 100 service function chains
 # number of vnf: 5~10
@@ -162,12 +170,14 @@ class Configuration(BaseObject):
         return "route: {}\tplace: {}\tcomputing_resource: {}".format(self.route.__str__(), self.place.__str__(),
                                                                      self.computing_resource.__str__())
 
+    # latency (normal & para)
     def get_latency(self, para: bool = False) -> float:
         if para:
             return 1  # todo
 
         return self._route_latency + self.sfc.vnf_latency_sum
 
+    # get the max resource usage ratio
     def computing_resource_ratio(self, topo: nx.Graph) -> float:
         ret = 0
         for pos in self.computing_resource:
@@ -246,7 +256,7 @@ class Configuration(BaseObject):
         # find the shortest distance to every point
 
 
-def dijkstra(topo: nx.Graph, s: int) -> {}:  # todo
+def _dijkstra(topo: nx.Graph, s: int) -> {}:  # todo
     ret = {}
     heap = [(0, s)]
     while heap:
@@ -265,11 +275,11 @@ def dijkstra(topo: nx.Graph, s: int) -> {}:  # todo
 
 
 # dfs + latency constraint (+ dijkstra)
-def generate_route_list(topo: nx.Graph, sfc: SFC):
+def _generate_route_list(topo: nx.Graph, sfc: SFC):
     s = sfc.s
     d = sfc.d
 
-    shortest_distance = dijkstra(topo, d)
+    shortest_distance = _dijkstra(topo, d)
     if s not in shortest_distance:
         return []
 
@@ -300,7 +310,7 @@ def generate_route_list(topo: nx.Graph, sfc: SFC):
 
 
 # bfs
-def generate_configuration(topo: nx.Graph, route: List[int], route_latency: int, sfc: SFC, idx: int) \
+def _generate_configurations_for_one_route(topo: nx.Graph, route: List[int], route_latency: int, sfc: SFC, idx: int) \
         -> List[Configuration]:
     m = len(sfc.vnf_list)
     n = len(route)
@@ -318,7 +328,7 @@ def generate_configuration(topo: nx.Graph, route: List[int], route_latency: int,
                 add = cur[:]
                 add.append(i)
 
-                # check cpu capacity
+                # check computing resource capacity
                 index = len(add) - 2
                 node_capacity = topo.nodes.data()[route[add[index + 1]]]['computing_resource']
                 usage = sfc.vnf_list[index].computing_resource
@@ -335,15 +345,13 @@ def generate_configuration(topo: nx.Graph, route: List[int], route_latency: int,
 
 
 # all configuration for one sfc
-def generate_configuration_list(topo: nx.Graph, sfc: SFC) -> List[Configuration]:
-    route_list = generate_route_list(topo, sfc)
+def generate_configurations_for_one_sfc(topo: nx.Graph, sfc: SFC) -> List[Configuration]:
+    route_list = _generate_route_list(topo, sfc)
 
     configuration_list = []
     for idx, item in enumerate(route_list):
         route, latency = item
-        result = generate_configuration(topo, route, latency, sfc, idx)
-        if result:
-            configuration_list.extend(result)
+        configuration_list.extend(_generate_configurations_for_one_route(topo, route, latency, sfc, idx))
 
     print("Size of configuration set: %d" % len(configuration_list))
 
