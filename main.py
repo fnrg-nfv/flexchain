@@ -13,8 +13,8 @@ def main():
     # model.save(file_name="solved_model.pkl")
     model = Model.load(file_name="solved_model.pkl")
 
-    model.draw_topo()
-    print(model)
+    # classic_ilp(model)
+    greedy(model)
 
     lp_to_ilp(model)
 

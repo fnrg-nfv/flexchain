@@ -2,7 +2,6 @@
 
 *.mps
 *.pyc
-*.pyc
 docs/~$idea.docx
 *.pkl
 *.txt
