@@ -86,8 +86,9 @@ class Model(BaseObject):
         self.sfc_list = sfc_list
 
     def __str__(self):
-        return "TOPO-nodes:{}\nTOPO-edges:{}\nSFCs:{}".format(self.topo.nodes.data(), self.topo.edges.data(),
-                                                              self.sfc_list)
+        return "TOPO-nodes:{}:{}\nTOPO-edges:{}:{}\nSFCs:{}".format(len(self.topo.nodes), self.topo.nodes.data(),
+                                                                    len(self.topo.edges), self.topo.edges.data(),
+                                                                    self.sfc_list)
 
     def save(self, file_name='model_data.pkl'):
         with open(file_name, 'wb') as output:
