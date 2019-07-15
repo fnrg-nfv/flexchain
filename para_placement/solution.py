@@ -2,6 +2,7 @@ from pulp import *
 
 from para_placement.evaluation import evaluate, objective_value
 from para_placement.model import *
+import copy
 
 epsilon = 0.03
 
@@ -212,7 +213,7 @@ def greedy(model: Model):
     #     if sfc_reject == 1:
     #         greedy_result.append((sfc, 0, [], []))
 
-    topo = model.topo
+    topo = copy.deepcopy(model.topo) 
     sfcs = model.sfc_list
     sfcs.sort(key = lambda x: x.vnf_computing_resources_sum)
     # sort_sfcs_by_computing_resources(sfcs)
@@ -220,17 +221,25 @@ def greedy(model: Model):
         configurations = generate_configurations_for_one_sfc(topo, sfc)
         configurations.sort(key = lambda x: x.get_latency())
         for configuration in configurations:
-            # if is_configuration_valid(topo, sfc, configuration):
-            #     sfc.accepted_configuration = configuration
-            #     break
-            sfc.accepted_configuration = configuration
-            if evaluate(model):
+            if is_configuration_valid(topo, sfc, configuration):
+                sfc.accepted_configuration = configuration
                 break
+            # sfc.accepted_configuration = configuration
+            # if evaluate(model):
+            #     break
             # if threshold > 100:
             #     break
+        # if not evaluate(model):
+        #     sfc.accepted_configuration = None
+    if evaluate(model):
+        objective_v = objective_value(model, epsilon)
+        print(objective_v)
+        accepted_sfc_list = list(filter(lambda s: s.accepted_configuration is not None, model.sfc_list))
+        print(len(accepted_sfc_list))
+
+    else:
+        print("Greedy failed...")
         
-    objective_v = objective_value(model, epsilon)
-    print(objective_v)
 
 def heuristic(model: Model):
     pass
