@@ -39,7 +39,7 @@ class Configuration(BaseObject):
     def __str__(self):
         return self.place.__str__()
 
-    def para_latency_analysis(self):
+    def para_latency_analysis(self) -> float:
         """
         Get the optimal parallel execution situation using backtracking
         """
@@ -64,7 +64,18 @@ class Configuration(BaseObject):
             self.l = 999999
             self.backtracking_analysis(0, vnfs, [], result)
             optimal_para.extend(result)
-        return optimal_para
+        
+        total_latency = 0
+        sub_chain_latency = self.sfc.vnf_list[0].latency
+        for i in range(len(optimal_para)):
+            if optimal_para[i] == 1:
+                sub_chain_latency = max(sub_chain_latency, self.sfc.vnf_list[i+1])
+            else:
+                total_latency += sub_chain_latency
+                sub_chain_latency = self.sfc.vnf_list[i+1]
+        total_latency += sub_chain_latency
+
+        return total_latency
 
     def backtracking_analysis(self, index, vnfs, analysis_result, result):
         """
