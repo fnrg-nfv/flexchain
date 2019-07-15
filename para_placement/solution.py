@@ -2,7 +2,6 @@ from pulp import *
 
 from para_placement.model import *
 
-
 epsilon = 0.03
 
 
@@ -164,28 +163,32 @@ def sort_sfcs_by_latency(sfcs):
             else:
                 break
 
+
 def sort_route_list_by_capacity_divide_latency(topo, route_list):
-    '''Sort all possible path by path_capacity/path_latency in decreasing order
-    '''
+    """
+    Sort all possible path by path_capacity/path_latency in decreasing order
+    """
     ranked_path = []
     for path in route_list:
         path_latency = path[1]
         path_capacity = 0
         for node_index in path[0]:
             path_capacity += topo.nodes[node_index]['computing_resource']
-        ranked_path.append(list(path).append(path_capacity/path_latency))
+        ranked_path.append(list(path).append(path_capacity / path_latency))
     for i in range(1, len(ranked_path)):
         for j in range(i, 0, -1):
-            if ranked_path[j][2] > ranked_path[j-1][2]:
-                ranked_path[j], ranked_path[j-1] = ranked_path[j-1], ranked_path[j]
+            if ranked_path[j][2] > ranked_path[j - 1][2]:
+                ranked_path[j], ranked_path[j - 1] = ranked_path[j - 1], ranked_path[j]
             else:
                 break
     return ranked_path
 
-def place_sfc_with_parallelism_concern(topo, sfc, ranked_path) -> (sfc, accept_or_not, path, place):
+
+def place_sfc_with_parallelism_concern(topo, sfc, ranked_path):
     pass
-    
-def greedy(model: Model) -> Result:
+
+
+def greedy(model: Model):
     """Greedy thought: 
         Sort sfc's latency in increasing order
         For every sfc, sort s to d path's latency in increasing order
@@ -210,7 +213,7 @@ def greedy(model: Model) -> Result:
             vnf_process_latency += vnf.latency
         route_list = generate_route_list(topo, sfc)
         ranked_path = sort_route_list_by_capacity_divide_latency(topo, route_list)
-        
+
         for route in ranked_path:
             path, path_latency = route
             place = []
@@ -232,11 +235,11 @@ def greedy(model: Model) -> Result:
                     num_of_accept_sfcs += 1
                     greedy_result.append((sfc, 1, path, place))
                 else:
-                    #This route cannot work. add deleted computing resources back
-                    vnf_index -=1
-                    while vnf_index>=0:
+                    # This route cannot work. add deleted computing resources back
+                    vnf_index -= 1
+                    while vnf_index >= 0:
                         topo.node[path[place.pop()]]['computing_resource'] += sfc.vnf_list[vnf_index].computing_resource
-                        vnf_index -=1
+                        vnf_index -= 1
             else:
                 break
             if sfc_reject == 0:
