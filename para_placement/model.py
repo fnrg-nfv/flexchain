@@ -69,9 +69,11 @@ class SFC(BaseObject):
         self.idx = idx
 
         self.vnf_latency_sum: float = 0
+        self.vnf_computing_resources_sum = 0
         self.accepted_configuration: Configuration = None
         for vnf in vnf_list:
             self.vnf_latency_sum += vnf.latency
+            self.vnf_computing_resources_sum += vnf.computing_resource
 
     def __str__(self):
         return "({}, {}, {}, {}->{})".format(self.vnf_list, self.latency, self.throughput, self.s, self.d)
