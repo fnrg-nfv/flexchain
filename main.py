@@ -4,18 +4,19 @@ from para_placement.solution import *
 
 def main():
     print("Placement Main")
-    # model = generate_model(10, 5)
-    # model.save()
+    # model = generate_model(32, 100)
+    # model.save(file_name="model_data.pkl")
+    # model = Model.load(file_name="model_data.pkl")
 
-    model = Model.load()
+    # classic_lp(model)
+
+    # model.save(file_name="solved_model.pkl")
+    model = Model.load(file_name="solved_model.pkl")
+
     model.draw_topo()
-
     print(model)
 
-    classic_ilp(model)
-
-    # generate_route_list(model.topo, model.sfc_list[0])
-    # generate_configuration(model.topo, model.sfc_list[0])
+    lp_to_ilp(model)
 
 
 if __name__ == '__main__':

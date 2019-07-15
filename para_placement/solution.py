@@ -5,41 +5,50 @@ from pulp import *
 from para_placement.model import *
 
 
-class Result(object):
-    def __init__(self, y_r: List[int], x_rs: List[List[int]]):
-        self.y_r = y_r
-        self.x_rx = x_rs
-
-
 class Configuration(BaseObject):
-    def __init__(self, sfc: SFC, route: List[int], place: List[int], latency: int, idx: string):
+    def __init__(self, sfc: SFC, route: List[int], place: List[int], route_latency: int, idx: string):
         self.sfc = sfc
         self.route = route
         self.place = place
-        self.latency = latency
+        self._route_latency = route_latency
+        self.latency = route_latency + sfc.vnf_latency_sum
         self.name = "{}_{}".format(sfc.idx, idx)
-        self.l = 9999999  # used to find optimal situation
 
         # computing resource
         self.computing_resource = {}
-        for i in range(len(sfc.vnf_list)):
-            vnf = sfc.vnf_list[i]
+        for i, vnf in enumerate(sfc.vnf_list):
             pos = route[place[i]]
             if pos not in self.computing_resource:
                 self.computing_resource[pos] = 0
             self.computing_resource[pos] += vnf.computing_resource
 
         # throughput
-        self.throughput = []
+        self.edges = []
         for i in range(len(route) - 1):
             start = max(route[i], route[i + 1])
             end = min(route[i], route[i + 1])
-            self.throughput.append("%d:%d" % (start, end))
+            self.edges.append("%d:%d" % (start, end))
+
+        self.l = 9999999  # used to find optimal situation
 
     def __str__(self):
-        return self.place.__str__()
+        return "route: {}\tplace: {}\tcomputing_resource: {}".format(self.route.__str__(), self.place.__str__(),
+                                                                     self.computing_resource.__str__())
 
-    def para_latency_analysis(self):
+    def get_latency(self, para: bool = False) -> float:
+        # todo
+        if para:
+            return 1
+
+        return self._route_latency + self.sfc.vnf_latency_sum
+
+    def computing_resource_ratio(self, topo: nx.Graph):
+        ret = 0
+        for pos in self.computing_resource:
+            ret = max(self.computing_resource[pos] / topo.nodes.data()[pos]['computing_resource'], ret)
+        return ret
+
+    def para_latency_analysis(self) -> List:
         """
         Get the optimal parallel execution situation using backtracking
         """
@@ -68,15 +77,9 @@ class Configuration(BaseObject):
 
     def backtracking_analysis(self, index, vnfs, analysis_result, result):
         """
-        for vnf in vnfs, find the optimal parallelism situation and save resule in result.
+        for vnf in vnfs, find the optimal parallelism situation and save result in result.
         len(result) = len(vnfs) - 1
         result[i] indicates vnfs[i] and vnfs[i+1] whether execute parallelism. 0 for no, 1 for yes
-
-        :param index:
-        :param vnfs:
-        :param analysis_result:
-        :param result:
-        :return:
         """
         if index == len(vnfs) - 1:
             # analysis end, compute latency
@@ -150,7 +153,7 @@ def generate_route_list(topo: nx.Graph, sfc: SFC):
     while stack:
         route, latency = stack.pop()
 
-        if latency + shortest_distance[route[-1]] > sfc.latency:
+        if latency + shortest_distance[route[-1]] > sfc.latency:  # partial latency constraints
             continue
 
         if route[-1] == d:
@@ -170,41 +173,38 @@ def generate_route_list(topo: nx.Graph, sfc: SFC):
 
 
 # bfs
-def generate_configuration(route: List[int], latency: int, sfc: SFC, idx: int) -> List[Configuration]:
-    latency += sfc.vnf_latency_sum
-    if latency <= sfc.latency:
-        m = len(sfc.vnf_list)
-        n = len(route)
+def generate_configuration(topo: nx.Graph, route: List[int], route_latency: int, sfc: SFC, idx: int) \
+        -> List[Configuration]:
+    m = len(sfc.vnf_list)
+    n = len(route)
 
-        placement_set = []
-        # if n in generate_configuration.cache and m in generate_configuration.cache[n]:
-        #     placement_set = generate_configuration.cache[n][m]
-        # else:
-        queue = [[0]]
+    placement_set = []
+    queue = [[0]]
 
-        while queue:
-            cur = queue.pop()
-            if len(cur) == m + 1:
-                cur.pop(0)
-                placement_set.append(cur)
-            else:
-                for i in range(cur[-1], n):
-                    add = cur[:]
-                    add.append(i)
+    while queue:
+        cur = queue.pop(0)
+        if len(cur) == m + 1:
+            cur.pop(0)  # remove the first zero
+            placement_set.append(cur)
+        else:
+            for i in range(cur[-1], n):
+                add = cur[:]
+                add.append(i)
+
+                # check cpu capacity
+                index = len(add) - 2
+                node_capacity = topo.nodes.data()[route[add[index + 1]]]['computing_resource']
+                usage = sfc.vnf_list[index].computing_resource
+                while index > 0 and add[index + 1] == add[index]:
+                    index -= 1
+                    usage += sfc.vnf_list[index].computing_resource
+                if usage <= node_capacity:
                     queue.append(add)
 
-            # add results to the cache
-            # if n not in generate_configuration.cache:
-            #     generate_configuration.cache[n] = {}
-            # generate_configuration.cache[n][m] = placement_set
-
-        configuration_set = []
-        for idx2, placement in enumerate(placement_set):
-            configuration_set.append(Configuration(sfc, route, placement, latency, "{}_{}".format(idx, idx2)))
-        return configuration_set
-
-
-generate_configuration.cache = {}
+    configuration_set = []
+    for idx2, placement in enumerate(placement_set):
+        configuration_set.append(Configuration(sfc, route, placement, route_latency, "{}_{}".format(idx, idx2)))
+    return configuration_set
 
 
 # all configuration for one sfc
@@ -214,7 +214,7 @@ def generate_configuration_list(topo: nx.Graph, sfc: SFC) -> List[Configuration]
     configuration_list = []
     for idx, item in enumerate(route_list):
         route, latency = item
-        result = generate_configuration(route, latency, sfc, idx)
+        result = generate_configuration(topo, route, latency, sfc, idx)
         if result:
             configuration_list.extend(result)
 
@@ -223,23 +223,26 @@ def generate_configuration_list(topo: nx.Graph, sfc: SFC) -> List[Configuration]
     return configuration_list
 
 
-epsilon = 0.01
+epsilon = 0.03
 
 
-def classic_ilp(model: Model) -> Result:
+def classic_lp(model: Model):
     print("Start Classic LP")
     problem = LpProblem("VNF Placement", LpMaximize)
 
     print("Variables init...")
     for sfc in model.sfc_list:
         sfc.configurations = generate_configuration_list(model.topo, sfc)
+        # filter configurations whose latency is legal
+        sfc.configurations = list(filter(lambda c: c.get_latency() <= sfc.latency, sfc.configurations))
         for configuration in sfc.configurations:
             configuration.var = LpVariable(configuration.name, 0, 1, LpContinuous)
 
     print("Objective function init...")
     # Objective function
     problem += lpSum(
-        (configuration.var * (1 - epsilon * configuration.latency) for configuration in sfc.configurations) for
+        (configuration.var * (1 - epsilon * configuration.get_latency()) for configuration in sfc.configurations)
+        for
         sfc in model.sfc_list), "Total number of accept requests minus total latency"
 
     # Constraints
@@ -264,7 +267,7 @@ def classic_ilp(model: Model) -> Result:
         problem += lpSum(configuration.var * sfc.throughput
                          for sfc in model.sfc_list
                          for configuration in sfc.configurations
-                         if "{}:{}".format(start, end) in configuration.throughput) <= info[
+                         if "{}:{}".format(start, end) in configuration.edges) <= info[
                        'bandwidth'], "TP_{}_{}".format(start, end)
     valid_sfc = 0
     for sfc in model.sfc_list:
@@ -272,26 +275,118 @@ def classic_ilp(model: Model) -> Result:
             valid_sfc += 1
     print("\nValid sfc: {}\n".format(valid_sfc))
 
-    # print("Problem Objective:\n", problem.objective)
-    LpSolverDefault.msg = 1
-    print("\nProblem Solving...")
+    print("Problem Solving...")
+    # LpSolverDefault.msg = 1
     problem.solve()
+    print("Objective Value: {}".format(value(problem.objective)))
 
-    return Result([], [])  # todo
+    # reduce the configurations for each sfc
+    for sfc in model.sfc_list:
+        sfc.configurations = list(filter(lambda c: c.var.varValue > 0, sfc.configurations))
+    model.sfc_list = list(filter(lambda s: len(s.configurations) > 0, model.sfc_list))  # reduce configurations
+    print("Accept sfc in LP: {}".format(len(model.sfc_list)))
+
+    # output the lp result
+    with open("result.txt", "w+") as output:
+        for sfc in model.sfc_list:
+            for configuration in sfc.configurations:
+                if configuration.var.varValue > 0:
+                    output.write("C {}: {}\t{}\n".format(configuration.name, configuration.var.varValue, configuration))
+        output.close()
 
 
-def greedy(model: Model) -> Result:
+# find the near optimal solution from LP
+def lp_to_ilp(model: Model):
+    for sfc in model.sfc_list:
+        sfc.configurations.sort(key=lambda c: c.var.varValue, reverse=True)  # varValue, latency, cr ratio
+    # model.sfc_list.sort(key=lambda s: s.configurations[0].get_normal_latency())  # sfc sorted by configuration latency
+    # sfc sorted by computing resource ratio
+    model.sfc_list.sort(key=lambda s: s.configurations[0].computing_resource_ratio(model.topo))
+    for sfc in model.sfc_list:
+        passed = False
+        for configuration in sfc.configurations:
+            sfc.accepted_configuration = configuration
+            if evaluate(model):
+                passed = True
+                break
+        if not passed:
+            sfc.accepted_configuration = None
+
+    print(evaluate(model))
+
+    # rounding
+    # count = 0
+    # while count < 200:
+    #     count += 1
+    #     print("Rounding...{}".format(count))
+    #
+    #     for sfc in model.sfc_list:
+    #         x_sum = sum(configuration.var.varValue for configuration in sfc.configurations)
+    #         if random.uniform(0, 1) <= x_sum:  # accepted
+    #             choose_random = random.uniform(0, 1)
+    #             for configuration in sfc.configurations:
+    #                 if configuration.var.varValue > 0:
+    #                     partial = configuration.var.varValue / x_sum
+    #                     if choose_random <= partial:
+    #                         sfc.accepted_configuration = configuration
+    #                         break
+    #                     else:
+    #                         choose_random -= partial
+    #         else:  # rejected
+    #             sfc.accepted_configuration = None
+    #
+    #     if evaluate(model):
+    #         print("Accepted")
+    #         break
+    #     print("Rejected")
+
+    with open("result1.txt", "w+") as output:
+        for sfc in filter(lambda s: s.accepted_configuration is not None, model.sfc_list):
+            output.write(
+                "C {}: {}\t{}\n".format(sfc.accepted_configuration.name, sfc.accepted_configuration.var.varValue,
+                                        sfc.accepted_configuration))
+        output.close()
+
+
+def evaluate(model: Model) -> bool:
+    accepted_sfc_list = list(filter(lambda s: s.accepted_configuration is not None, model.sfc_list))
+    # print("Evaluating... Accepted sfc: {}".format(len(accepted_sfc_list)))
+
+    for sfc in accepted_sfc_list:
+        if sfc.accepted_configuration.get_latency() > sfc.latency:
+            return False
+
+    # computing resource constraints
+    for index, info in model.topo.nodes.data():
+        usage = sum(sfc.accepted_configuration.computing_resource[index]
+                    for sfc in accepted_sfc_list
+                    if index in sfc.accepted_configuration.computing_resource)
+        if usage > info['computing_resource']:
+            return False
+
+    # throughput constraints
+    for start, end, info in model.topo.edges.data():
+        usage = sum(sfc.throughput
+                    for sfc in accepted_sfc_list
+                    if "{}:{}".format(start, end) in sfc.accepted_configuration.edges)
+        if usage > info['bandwidth']:
+            return False
+
+    return True
+
+
+def greedy(model: Model):
     pass
 
 
-def heuristic(model: Model) -> Result:
+def heuristic(model: Model):
     pass
 
 
-def ilp(model: Model) -> Result:
+def ilp(model: Model):
     pass
 
 
 # genetic algorithm (not necessary)
-def ga(model: Model) -> Result:
+def ga(model: Model):
     pass

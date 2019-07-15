@@ -3,3 +3,7 @@
 *.pyc
 *.pyc
 docs/~$idea.docx
+*.pkl
+*.txt
+docs/~$idea.docx
+*.pkl
