@@ -2,16 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="863b2ba0-0468-4735-b769-88a37efa1cf5" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/71933.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/71933.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/idea.docx" beforeDir="false" afterPath="$PROJECT_DIR$/docs/idea.docx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/~$idea.docx" beforeDir="false" afterPath="$PROJECT_DIR$/docs/~$idea.docx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/model_data.pkl" beforeDir="false" afterPath="$PROJECT_DIR$/model_data.pkl" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/para_placement/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/para_placement/model.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/para_placement/solution.py" beforeDir="false" afterPath="$PROJECT_DIR$/para_placement/solution.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/para_placement/topology.py" beforeDir="false" afterPath="$PROJECT_DIR$/para_placement/topology.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -52,34 +48,27 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="171">
-              <caret line="9" selection-start-line="9" selection-end-line="9" />
+            <state relative-caret-position="190">
+              <caret line="14" lean-forward="true" selection-start-line="14" selection-end-line="14" />
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/para_placement/solution.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="834">
-              <caret line="298" column="28" selection-start-line="298" selection-start-column="28" selection-end-line="298" selection-end-column="28" />
+            <state relative-caret-position="253">
+              <caret line="82" column="44" lean-forward="true" selection-start-line="82" selection-start-column="44" selection-end-line="82" selection-end-column="44" />
               <folding>
-                <element signature="e#0#12#0" expanded="true" />
-                <element signature="e#243#4685#0" />
-                <element signature="e#344#1110#0" />
-                <element signature="e#1481#1588#0" />
-                <element signature="e#1591#1656#0" />
-                <element signature="e#1882#2841#0" />
-                <element signature="e#2521#4396#0" />
-                <element signature="e#4455#4882#0" />
-                <element signature="e#4980#5755#0" />
-                <element signature="e#5918#7048#0" />
-                <element signature="e#7652#8036#0" />
+                <element signature="e#1#19#0" expanded="true" />
+                <element signature="e#7711#10620#0" />
                 <element signature="e#11587#11597#0" />
-                <element signature="e#13387#14257#0" />
+                <element signature="e#13957#14168#0" />
+                <element signature="e#14225#14474#0" />
+                <element signature="e#14507#16852#0" />
               </folding>
             </state>
           </provider>
@@ -88,25 +77,20 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/para_placement/model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="245">
-              <caret line="78" selection-start-line="78" selection-end-line="78" />
+            <state relative-caret-position="167">
+              <caret line="72" column="28" lean-forward="true" selection-start-line="72" selection-start-column="28" selection-end-line="72" selection-end-column="28" />
               <folding>
-                <element signature="e#0#13#0" expanded="true" />
+                <element signature="e#0#12#0" expanded="true" />
                 <element signature="e#254#1727#0" />
                 <element signature="e#694#1727#0" />
-                <element signature="e#1757#2310#0" />
                 <element signature="e#2342#3153#0" />
                 <element signature="e#3410#4128#0" />
+                <element signature="e#6918#8677#0" />
+                <element signature="e#8736#9163#0" />
+                <element signature="e#9261#10067#0" />
+                <element signature="e#10215#11273#0" />
+                <element signature="e#11394#11778#0" />
               </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/result.txt">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="456">
-              <caret line="24" column="13" selection-start-line="24" selection-start-column="13" selection-end-line="24" selection-end-column="13" />
             </state>
           </provider>
         </entry>
@@ -128,8 +112,9 @@
       <find>sfc</find>
       <find>accept_</find>
       <find>latency</find>
-      <find>.latency</find>
       <find>route_latency</find>
+      <find>max</find>
+      <find>.latency</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -141,9 +126,10 @@
         <option value="$PROJECT_DIR$/README.md" />
         <option value="$PROJECT_DIR$/lp_test.py" />
         <option value="$PROJECT_DIR$/para_placement/topology.py" />
-        <option value="$PROJECT_DIR$/main.py" />
-        <option value="$PROJECT_DIR$/para_placement/model.py" />
+        <option value="D:/WeChat Files/WeChat Files/heylalaen/FileStorage/File/2019-07/test.py" />
         <option value="$PROJECT_DIR$/para_placement/solution.py" />
+        <option value="$PROJECT_DIR$/para_placement/model.py" />
+        <option value="$PROJECT_DIR$/main.py" />
       </list>
     </option>
   </component>
@@ -243,9 +229,32 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="test" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="para2" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="D:/WeChat Files/WeChat Files/heylalaen/FileStorage/File/2019-07" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="D:/WeChat Files/WeChat Files/heylalaen/FileStorage/File/2019-07/test.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
         <item itemvalue="Python.main" />
+        <item itemvalue="Python.test" />
         <item itemvalue="Python.lp_test" />
       </list>
     </recent_temporary>
@@ -263,12 +272,12 @@
       <workItem from="1562428280990" duration="1251000" />
       <workItem from="1563006652176" duration="2906000" />
       <workItem from="1563013407434" duration="40619000" />
-      <workItem from="1563172258752" duration="3752000" />
+      <workItem from="1563172258752" duration="7007000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="48528000" />
+    <option name="totallyTimeSpent" value="51783000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
@@ -279,7 +288,7 @@
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.329718" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.31127983" />
+      <window_info anchor="bottom" id="Run" order="2" visible="true" weight="0.43058568" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.3991323" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -325,7 +334,8 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/para2$lp_test.coverage" NAME="lp_test Coverage Results" MODIFIED="1563024731638" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/para2$main.coverage" NAME="main Coverage Results" MODIFIED="1563174847217" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/para2$main.coverage" NAME="main Coverage Results" MODIFIED="1563185647578" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/para2$test.coverage" NAME="test Coverage Results" MODIFIED="1563176711627" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="D:/WeChat Files/WeChat Files/heylalaen/FileStorage/File/2019-07" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/placement/solution.py" />
@@ -376,20 +386,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/result.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="456">
-          <caret line="24" column="13" selection-start-line="24" selection-start-column="13" selection-end-line="24" selection-end-column="13" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/result2.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret column="45" lean-forward="true" selection-start-column="45" selection-end-column="45" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/lp_test.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="469">
@@ -397,10 +393,36 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/main.py">
+    <entry file="file://D:/WeChat Files/WeChat Files/heylalaen/FileStorage/File/2019-07/test.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="171">
-          <caret line="9" selection-start-line="9" selection-end-line="9" />
+        <state relative-caret-position="245">
+          <caret line="51" column="26" lean-forward="true" selection-start-line="51" selection-start-column="26" selection-end-line="51" selection-end-column="26" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/result.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="95">
+          <caret line="28" column="44" lean-forward="true" selection-start-line="28" selection-start-column="44" selection-end-line="28" selection-end-column="44" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/para_placement/model.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="167">
+          <caret line="72" column="28" lean-forward="true" selection-start-line="72" selection-start-column="28" selection-end-line="72" selection-end-column="28" />
+          <folding>
+            <element signature="e#0#12#0" expanded="true" />
+            <element signature="e#254#1727#0" />
+            <element signature="e#694#1727#0" />
+            <element signature="e#2342#3153#0" />
+            <element signature="e#3410#4128#0" />
+            <element signature="e#6918#8677#0" />
+            <element signature="e#8736#9163#0" />
+            <element signature="e#9261#10067#0" />
+            <element signature="e#10215#11273#0" />
+            <element signature="e#11394#11778#0" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -411,40 +433,32 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/para_placement/model.py">
+    <entry file="file://$PROJECT_DIR$/result2.txt">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="245">
-          <caret line="78" selection-start-line="78" selection-end-line="78" />
-          <folding>
-            <element signature="e#0#13#0" expanded="true" />
-            <element signature="e#254#1727#0" />
-            <element signature="e#694#1727#0" />
-            <element signature="e#1757#2310#0" />
-            <element signature="e#2342#3153#0" />
-            <element signature="e#3410#4128#0" />
-          </folding>
+        <state relative-caret-position="-180">
+          <caret column="45" lean-forward="true" selection-start-column="45" selection-end-column="45" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/para_placement/solution.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="834">
-          <caret line="298" column="28" selection-start-line="298" selection-start-column="28" selection-end-line="298" selection-end-column="28" />
+        <state relative-caret-position="253">
+          <caret line="82" column="44" lean-forward="true" selection-start-line="82" selection-start-column="44" selection-end-line="82" selection-end-column="44" />
           <folding>
-            <element signature="e#0#12#0" expanded="true" />
-            <element signature="e#243#4685#0" />
-            <element signature="e#344#1110#0" />
-            <element signature="e#1481#1588#0" />
-            <element signature="e#1591#1656#0" />
-            <element signature="e#1882#2841#0" />
-            <element signature="e#2521#4396#0" />
-            <element signature="e#4455#4882#0" />
-            <element signature="e#4980#5755#0" />
-            <element signature="e#5918#7048#0" />
-            <element signature="e#7652#8036#0" />
+            <element signature="e#1#19#0" expanded="true" />
+            <element signature="e#7711#10620#0" />
             <element signature="e#11587#11597#0" />
-            <element signature="e#13387#14257#0" />
+            <element signature="e#13957#14168#0" />
+            <element signature="e#14225#14474#0" />
+            <element signature="e#14507#16852#0" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="190">
+          <caret line="14" lean-forward="true" selection-start-line="14" selection-end-line="14" />
         </state>
       </provider>
     </entry>
