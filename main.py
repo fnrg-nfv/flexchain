@@ -12,7 +12,8 @@ def main():
 
     print(model)
 
-    classic_ilp(model)
+    # classic_ilp(model)
+    greedy(model)
 
     # generate_route_list(model.topo, model.sfc_list[0])
     # generate_configuration(model.topo, model.sfc_list[0])

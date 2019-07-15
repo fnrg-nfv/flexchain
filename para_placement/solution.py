@@ -299,14 +299,27 @@ def sort_sfcs_by_latency(sfcs):
             else:
                 break
 
-def sort_route_list_by_latency(route_list):
-    for i in range(1, len(route_list)):
+def sort_route_list_by_capacity_divide_latency(topo, route_list):
+    '''Sort all possible path by path_capacity/path_latency in decreasing order
+    '''
+    ranked_path = []
+    for path in route_list:
+        path_latency = path[1]
+        path_capacity = 0
+        for node_index in path[0]:
+            path_capacity += topo.nodes[node_index]['computing_resource']
+        ranked_path.append(list(path).append(path_capacity/path_latency))
+    for i in range(1, len(ranked_path)):
         for j in range(i, 0, -1):
-            if route_list[j][1] < route_list[j-1][1]:
-                route_list[j], route_list[j-1] = route_list[j-1], route_list[j]
+            if ranked_path[j][2] > ranked_path[j-1][2]:
+                ranked_path[j], ranked_path[j-1] = ranked_path[j-1], ranked_path[j]
             else:
                 break
+    return ranked_path
 
+def place_sfc_with_parallelism_concern(topo, sfc, ranked_path) -> (sfc, accept_or_not, path, place):
+    pass
+    
 def greedy(model: Model) -> Result:
     '''Greedy thought: 
         Sort sfc's latency in increasing order
@@ -320,7 +333,7 @@ def greedy(model: Model) -> Result:
     print("Sort sfcs...")
     sfcs = model.sfc_list
     sort_sfcs_by_latency(sfcs)
-    print("Sort ending...")
+    print("Sort sfcs successfully...")
 
     print("Handle sfc one by one...")
     topo = model.topo
@@ -330,8 +343,9 @@ def greedy(model: Model) -> Result:
         for vnf in sfc.vnf_list:
             vnf_process_latency += vnf.latency
         route_list = generate_route_list(topo, sfc)
-        sort_route_list_by_latency(route_list)
-        for route in route_list:
+        ranked_path = sort_route_list_by_capacity_divide_latency(topo, route_list)
+        
+        for route in ranked_path:
             path, path_latency = route
             place = []
             total_latency = vnf_process_latency + path_latency
@@ -355,11 +369,11 @@ def greedy(model: Model) -> Result:
                     #This route cannot work. add deleted computing resources back
                     vnf_index -=1
                     while vnf_index>=0:
-                        topo.node[path[place.pop()]]['computing_resource'] += sfc.vnf_list[vnf_index]
+                        topo.node[path[place.pop()]]['computing_resource'] += sfc.vnf_list[vnf_index].computing_resource
                         vnf_index -=1
-            if sfc_reject == 0:
-                break
             else:
+                break
+            if sfc_reject == 0:
                 break
         if sfc_reject == 1:
             greedy_result.append((sfc, 0, [], []))
