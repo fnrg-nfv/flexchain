@@ -23,7 +23,7 @@ def generate_randomly(size: int = 100):
 
     for i in range(size):
         for j in range(i + 1, size):
-            if random.randint(1, 5) == 1:
+            if random.randint(1, 10) == 1:
                 topo.add_edge(i, j, bandwidth=random.randint(1000, 10000), latency=random.uniform(2, 5))
 
     return topo

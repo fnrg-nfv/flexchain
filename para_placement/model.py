@@ -5,6 +5,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 from para_placement import topology
+from para_placement.solution import Configuration
 
 
 class BaseObject(object):
@@ -67,6 +68,7 @@ class SFC(BaseObject):
         self.idx = idx
 
         self.vnf_latency_sum: float = 0
+        self.accepted_configuration: Configuration = None
         for vnf in vnf_list:
             self.vnf_latency_sum += vnf.latency
 
@@ -86,11 +88,14 @@ class Model(BaseObject):
     def save(self, file_name='model_data.pkl'):
         with open(file_name, 'wb') as output:
             pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
+            output.close()
 
     @staticmethod
     def load(file_name='model_data.pkl'):
         with open(file_name, 'rb') as input_file:
-            return pickle.load(input_file)
+            model = pickle.load(input_file)
+            input_file.close()
+            return model
 
     def draw_topo(self):
         nx.draw(self.topo, with_labels=True)
