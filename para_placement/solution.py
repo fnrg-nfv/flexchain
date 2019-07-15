@@ -2,6 +2,7 @@ from pulp import *
 
 from para_placement.evaluation import evaluate, objective_value
 from para_placement.model import *
+import copy
 
 epsilon = 0.03
 
@@ -131,9 +132,26 @@ def sort_route_list_by_capacity_divide_latency(topo, route_list):
     return ranked_path
 
 
-def place_sfc_with_parallelism_concern(topo, sfc, ranked_path):
-    pass
-
+def is_configuration_valid(topo, sfc, configuration):
+    if sfc.latency < configuration.get_latency():
+        return False
+    place = configuration.place
+    route = configuration.route
+    index = 0
+    while index<len(place):
+        if topo.nodes[route[place[index]]]['computing_resource'] >= sfc.vnf_list[index].computing_resource:
+            topo.nodes[route[place[index]]]['computing_resource'] -= sfc.vnf_list[index].computing_resource
+            index += 1
+        else:
+            break
+    
+    if index == len(place):
+        return True
+    else:
+        index -= 1
+        while index >= 0:
+            topo.nodes[route[place[index]]]['computing_resource'] += sfc.vnf_list[index].computing_resource
+        return False
 
 def greedy(model: Model):
     """Greedy thought:
@@ -194,13 +212,33 @@ def greedy(model: Model):
     #     if sfc_reject == 1:
     #         greedy_result.append((sfc, 0, [], []))
 
-    topo = model.topo
+    topo = copy.deepcopy(model.topo) 
     sfcs = model.sfc_list
-    sort_sfcs_by_computing_resources(sfcs)
+    sfcs.sort(key = lambda x: x.vnf_computing_resources_sum)
+    # sort_sfcs_by_computing_resources(sfcs)
+    for sfc in sfcs:
+        configurations = generate_configurations_for_one_sfc(topo, sfc)
+        configurations.sort(key = lambda x: x.get_latency())
+        for configuration in configurations:
+            if is_configuration_valid(topo, sfc, configuration):
+                sfc.accepted_configuration = configuration
+                break
+            # sfc.accepted_configuration = configuration
+            # if evaluate(model):
+            #     break
+            # if threshold > 100:
+            #     break
+        # if not evaluate(model):
+        #     sfc.accepted_configuration = None
+    if evaluate(model):
+        objective_v = objective_value(model, epsilon)
+        print(objective_v)
+        accepted_sfc_list = list(filter(lambda s: s.accepted_configuration is not None, model.sfc_list))
+        print(len(accepted_sfc_list))
 
-    print("Handle finished...")
-    print("Result:", greedy_result)  # TODO: show result detail
-
+    else:
+        print("Greedy failed...")
+        
 
 def heuristic(model: Model):
     pass
