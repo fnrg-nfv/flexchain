@@ -1,1 +1,6 @@
 .vscode/
+
+*.mps
+*.pyc
+*.pyc
+docs/~$idea.docx

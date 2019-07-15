@@ -48,14 +48,13 @@ def main():
     problem += c7
 
     # objective function
-    problem += -factory_days[0] * cf0 * f0 - \
-               factory_days[1] * cf1 * f1 - factory_days[2] * cf2 * f2
+    problem += -factory_days[0] * cf0 * f0 - factory_days[1] * cf1 * f1 - factory_days[2] * cf2 * f2
 
     print(problem)
 
     problem.solve()
     for i in range(num_factories):
-        print("Factory {i}: {factory_days[i].varValue}")
+        print("Factory {}: {}".format(i, factory_days[i].varValue))
 
 
 if __name__ == '__main__':
