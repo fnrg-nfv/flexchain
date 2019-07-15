@@ -69,11 +69,12 @@ class SFC(BaseObject):
         self.idx = idx
 
         self.vnf_latency_sum: float = 0
-        self.vnf_computing_resources_sum = 0
-        self.accepted_configuration: Configuration = None
+        self.vnf_computing_resources_sum: int = 0
         for vnf in vnf_list:
             self.vnf_latency_sum += vnf.latency
             self.vnf_computing_resources_sum += vnf.computing_resource
+
+        self.accepted_configuration: Configuration = None
 
     def __str__(self):
         return "({}, {}, {}, {}->{})".format(self.vnf_list, self.latency, self.throughput, self.s, self.d)
@@ -85,8 +86,9 @@ class Model(BaseObject):
         self.sfc_list = sfc_list
 
     def __str__(self):
-        return "TOPO-nodes:{}\nTOPO-edges:{}\nSFCs:{}".format(self.topo.nodes.data(), self.topo.edges.data(),
-                                                              self.sfc_list)
+        return "TOPO-nodes:{}:{}\nTOPO-edges:{}:{}\nSFCs:{}".format(len(self.topo.nodes), self.topo.nodes.data(),
+                                                                    len(self.topo.edges), self.topo.edges.data(),
+                                                                    self.sfc_list)
 
     def save(self, file_name='model_data.pkl'):
         with open(file_name, 'wb') as output:
@@ -107,14 +109,12 @@ class Model(BaseObject):
     def output_result(self, filename="result.txt"):
         with open(filename, "w+") as output:
             for sfc in filter(lambda s: s.accepted_configuration is not None, self.sfc_list):
-                output.write(
-                    "C {}: {}\t{}\n".format(sfc.accepted_configuration.name, sfc.accepted_configuration.var.varValue,
-                                            sfc.accepted_configuration))
+                output.write("C {}\t{}\n".format(sfc.accepted_configuration.name, sfc.accepted_configuration))
             output.close()
 
 
 # random generate 100 service function chains
-# number of vnf: 5~10
+# number of vnf: 5~8
 # vnf computing resource: 500~1000
 # vnf latency: 0.2~2 ms
 # sfc latency demand: 10~30 ms
@@ -124,7 +124,7 @@ def generate_sfc_list(topo: nx.Graph, size=100):
     ret = []
     nodes_len = len(topo.nodes)
     for i in range(size):
-        n = random.randint(5, 10)
+        n = random.randint(4, 7)
         vnf_list = []
         for j in range(n):
             vnf_list.append(VNF(latency=random.uniform(0.2, 2), computing_resource=random.randint(400, 800)))
@@ -148,7 +148,6 @@ class Configuration(BaseObject):
         self.route = route
         self.place = place
         self._route_latency = route_latency
-        # self.latency = route_latency + sfc.vnf_latency_sum
         self.name = "{}_{}".format(sfc.idx, idx)
 
         # computing resource
@@ -172,11 +171,12 @@ class Configuration(BaseObject):
         return "route: {}\tplace: {}\tcomputing_resource: {}".format(self.route.__str__(), self.place.__str__(),
                                                                      self.computing_resource.__str__())
 
-    # latency (normal & para)
-    def get_latency(self, para: bool = False) -> float:
-        if para:
-            return 1  # todo
+    para = False
 
+    # latency (normal & para)
+    def get_latency(self) -> float:
+        if Configuration.para:
+            return 1  # todo return para latency
         return self._route_latency + self.sfc.vnf_latency_sum
 
     # get the max resource usage ratio
@@ -283,7 +283,6 @@ def _dijkstra(topo: nx.Graph, s: int) -> {}:  # todo
                 new_distance = adj_nodes[node]['latency'] + distance
                 heapq.heappush(heap, (new_distance, node))
 
-    print("Dijkstra: {}".format(ret))
     return ret
 
 

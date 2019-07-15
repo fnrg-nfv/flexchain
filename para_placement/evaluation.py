@@ -3,8 +3,8 @@ from para_placement.model import Model
 
 def evaluate(model: Model) -> bool:
     accepted_sfc_list = list(filter(lambda s: s.accepted_configuration is not None, model.sfc_list))
-    # print("Evaluating... Accepted sfc: {}".format(len(accepted_sfc_list)))
 
+    # latency constraints
     for sfc in accepted_sfc_list:
         if sfc.accepted_configuration.get_latency() > sfc.latency:
             return False
@@ -28,7 +28,7 @@ def evaluate(model: Model) -> bool:
     return True
 
 
-def objective_value(model: Model, epsilon) -> float:
+def objective_value(model: Model, epsilon: float) -> float:
     objective = 0
     accepted_sfc_list = list(filter(lambda s: s.accepted_configuration is not None, model.sfc_list))
     objective += len(accepted_sfc_list)
