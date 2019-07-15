@@ -124,10 +124,10 @@ def lp_to_ilp(model: Model):
 
 
 # Greedy
-def sort_sfcs_by_latency(sfcs):
+def sort_sfcs_by_computing_resources(sfcs):
     for i in range(1, len(sfcs)):
         for j in range(i, 0, -1):
-            if sfcs[j].latency < sfcs[j - 1].latency:
+            if sfcs[j].vnf_computing_resources_sum < sfcs[j - 1].vnf_computing_resources_sum:
                 sfcs[j], sfcs[j - 1] = sfcs[j - 1], sfcs[j]
             else:
                 break
@@ -165,56 +165,62 @@ def greedy(model: Model):
         Not find then reject!
     """
 
-    print("Start greedy")
-    num_of_accept_sfcs = 0
-    greedy_result = []
-    print("Sort sfcs...")
-    sfcs = model.sfc_list
-    sort_sfcs_by_latency(sfcs)
-    print("Sort sfcs successfully...")
+    # print("Start greedy")
+    # num_of_accept_sfcs = 0
+    # greedy_result = []
+    # print("Sort sfcs...")
+    # sfcs = model.sfc_list
+    # sort_sfcs_by_latency(sfcs)
+    # print("Sort sfcs successfully...")
 
-    print("Handle sfc one by one...")
+    # print("Handle sfc one by one...")
+    # topo = model.topo
+    # for sfc in sfcs:
+    #     sfc_reject = 1
+    #     vnf_process_latency = 0
+    #     for vnf in sfc.vnf_list:
+    #         vnf_process_latency += vnf.latency
+    #     route_list = generate_route_list(topo, sfc)
+    #     ranked_path = sort_route_list_by_capacity_divide_latency(topo, route_list)
+
+    #     for route in ranked_path:
+    #         path, path_latency = route
+    #         place = []
+    #         total_latency = vnf_process_latency + path_latency
+    #         if total_latency < sfc.latency:
+    #             path_index = 0
+    #             vnf_index = 0
+    #             while path_index < len(path) and vnf_index < len(sfc.vnf_list):
+    #                 if topo.nodes[path[path_index]]['computing_resource'] >= sfc.vnf_list[vnf_index].computing_resource:
+    #                     place.append(path_index)
+    #                     topo.nodes[path[path_index]]['computing_resource'] -= sfc.vnf_list[vnf_index].computing_resource
+    #                     vnf_index += 1
+    #                 else:
+    #                     path_index += 1
+
+    #             if vnf_index >= len(sfc.vnf_list):
+    #                 # we successfully put this sfc in this route
+    #                 sfc_reject = 0
+    #                 num_of_accept_sfcs += 1
+    #                 greedy_result.append((sfc, 1, path, place))
+    #             else:
+    #                 # This route cannot work. add deleted computing resources back
+    #                 vnf_index -= 1
+    #                 while vnf_index >= 0:
+    #                     topo.node[path[place.pop()]]['computing_resource'] += sfc.vnf_list[vnf_index].computing_resource
+    #                     vnf_index -= 1
+    #         else:
+    #             break
+    #         if sfc_reject == 0:
+    #             break
+    #     if sfc_reject == 1:
+    #         greedy_result.append((sfc, 0, [], []))
+
+
     topo = model.topo
-    for sfc in sfcs:
-        sfc_reject = 1
-        vnf_process_latency = 0
-        for vnf in sfc.vnf_list:
-            vnf_process_latency += vnf.latency
-        route_list = _generate_route_list(topo, sfc)
-        ranked_path = sort_route_list_by_capacity_divide_latency(topo, route_list)
+    sfcs = model.sfc_list
+    sort_sfcs_by_computing_resources(sfcs)
 
-        for route in ranked_path:
-            path, path_latency = route
-            place = []
-            total_latency = vnf_process_latency + path_latency
-            if total_latency < sfc.latency:
-                path_index = 0
-                vnf_index = 0
-                while path_index < len(path) and vnf_index < len(sfc.vnf_list):
-                    if topo.nodes[path[path_index]]['computing_resource'] >= sfc.vnf_list[vnf_index].computing_resource:
-                        place.append(path_index)
-                        topo.nodes[path[path_index]]['computing_resource'] -= sfc.vnf_list[vnf_index].computing_resource
-                        vnf_index += 1
-                    else:
-                        path_index += 1
-
-                if vnf_index >= len(sfc.vnf_list):
-                    # we successfully put this sfc in this route
-                    sfc_reject = 0
-                    num_of_accept_sfcs += 1
-                    greedy_result.append((sfc, 1, path, place))
-                else:
-                    # This route cannot work. add deleted computing resources back
-                    vnf_index -= 1
-                    while vnf_index >= 0:
-                        topo.node[path[place.pop()]]['computing_resource'] += sfc.vnf_list[vnf_index].computing_resource
-                        vnf_index -= 1
-            else:
-                break
-            if sfc_reject == 0:
-                break
-        if sfc_reject == 1:
-            greedy_result.append((sfc, 0, [], []))
 
     print("Handle finished...")
     print("Result:", greedy_result)  # TODO: show result detail
