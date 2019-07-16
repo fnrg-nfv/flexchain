@@ -26,7 +26,7 @@ class VNF(BaseObject):
             self.write_fields |= write_fields
 
     def __str__(self):
-        return "(%f, %d)" % (self.latency, self.computing_resource)
+        return "(%f, %d, %s, %s)" % (self.latency, self.computing_resource, self.read_fields, self.write_fields)
 
     @staticmethod
     def parallelizable_analysis(vnf1, vnf2):
@@ -117,6 +117,23 @@ class Model(BaseObject):
                 output.write("C {}\t{}\n".format(sfc.accepted_configuration.name, sfc.accepted_configuration))
             output.close()
 
+def generate_vnf_list(size=30):
+    vnf_list = []
+    readable_fields = {0, 1, 2, 3, 4}
+    writeable_fields = {0, 1, 2, 3, 4}
+    for i in range(size):
+        latency = random.uniform(0.2, 2)
+        computing_resource = random.randint(400, 800)
+        read_fields = set()
+        for item in readable_fields:
+            if random.randint(0,1):
+                read_fields.add(item)
+        write_fields = set()
+        for item in writeable_fields:
+            if random.randint(0,1):
+                write_fields.add(item)
+        vnf_list.append(VNF(latency, computing_resource, read_fields, write_fields))
+    return vnf_list        
 
 # random generate 100 service function chains
 # number of vnf: 5~8
