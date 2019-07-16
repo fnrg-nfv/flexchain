@@ -64,8 +64,7 @@ def classic_lp(model: Model):
     # reduce the configurations for each sfc
     for sfc in model.sfc_list:
         sfc.configurations = list(filter(lambda c: c.var.varValue > 0, sfc.configurations))
-    model.sfc_list = list(filter(lambda s: len(s.configurations) > 0, model.sfc_list))  # reduce configurations
-    print("Accept sfc in LP: {}".format(len(model.sfc_list)))
+    print("Accept sfc in LP: {}".format(len(list(filter(lambda s: len(s.configurations) > 0, model.sfc_list)))))
 
     # output the lp result
     with open("lp_result.txt", "w+") as output:
