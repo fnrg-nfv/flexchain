@@ -18,8 +18,12 @@ class VNF(BaseObject):
     def __init__(self, latency: float, computing_resource: int, read_fields: set = None, write_fields: set = None):
         self.latency = latency
         self.computing_resource = computing_resource
-        self.read_fields = read_fields
-        self.write_fields = write_fields
+        self.read_fields = set()
+        if read_fields is not None:
+            self.read_fields |= read_fields
+        self.write_fields = set()
+        if write_fields is not None:
+            self.write_fields |= write_fields
 
     def __str__(self):
         return "(%f, %d)" % (self.latency, self.computing_resource)
@@ -103,6 +107,7 @@ class Model(BaseObject):
             return model
 
     def draw_topo(self):
+        print(self.topo)
         nx.draw(self.topo, with_labels=True)
         plt.show()
 
@@ -176,7 +181,7 @@ class Configuration(BaseObject):
     # latency (normal & para)
     def get_latency(self) -> float:
         if Configuration.para:
-            return 1  # todo return para latency
+            return self._route_latency + self.para_latency_analysis()  # todo return para latency
         return self._route_latency + self.sfc.vnf_latency_sum
 
     # get the max resource usage ratio
@@ -211,15 +216,15 @@ class Configuration(BaseObject):
             self.l = 999999
             self.backtracking_analysis(0, vnfs, [], result)
             optimal_para.extend(result)
-        
+
         total_latency = 0
         sub_chain_latency = self.sfc.vnf_list[0].latency
         for i in range(len(optimal_para)):
             if optimal_para[i] == 1:
-                sub_chain_latency = max(sub_chain_latency, self.sfc.vnf_list[i+1])
+                sub_chain_latency = max(sub_chain_latency, self.sfc.vnf_list[i + 1])
             else:
                 total_latency += sub_chain_latency
-                sub_chain_latency = self.sfc.vnf_list[i+1]
+                sub_chain_latency = self.sfc.vnf_list[i + 1]
         total_latency += sub_chain_latency
 
         return total_latency

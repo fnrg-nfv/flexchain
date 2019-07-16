@@ -138,13 +138,13 @@ def is_configuration_valid(topo, sfc, configuration):
     place = configuration.place
     route = configuration.route
     index = 0
-    while index<len(place):
+    while index < len(place):
         if topo.nodes[route[place[index]]]['computing_resource'] >= sfc.vnf_list[index].computing_resource:
             topo.nodes[route[place[index]]]['computing_resource'] -= sfc.vnf_list[index].computing_resource
             index += 1
         else:
             break
-    
+
     if index == len(place):
         return True
     else:
@@ -152,6 +152,7 @@ def is_configuration_valid(topo, sfc, configuration):
         while index >= 0:
             topo.nodes[route[place[index]]]['computing_resource'] += sfc.vnf_list[index].computing_resource
         return False
+
 
 def greedy(model: Model):
     """Greedy thought:
@@ -212,13 +213,13 @@ def greedy(model: Model):
     #     if sfc_reject == 1:
     #         greedy_result.append((sfc, 0, [], []))
 
-    topo = copy.deepcopy(model.topo) 
+    topo = copy.deepcopy(model.topo)
     sfcs = model.sfc_list
-    sfcs.sort(key = lambda x: x.vnf_computing_resources_sum)
+    sfcs.sort(key=lambda x: x.vnf_computing_resources_sum)
     # sort_sfcs_by_computing_resources(sfcs)
     for sfc in sfcs:
         configurations = generate_configurations_for_one_sfc(topo, sfc)
-        configurations.sort(key = lambda x: x.get_latency())
+        configurations.sort(key=lambda x: x.get_latency())
         for configuration in configurations:
             if is_configuration_valid(topo, sfc, configuration):
                 sfc.accepted_configuration = configuration
@@ -238,7 +239,7 @@ def greedy(model: Model):
 
     else:
         print("Greedy failed...")
-        
+
 
 def heuristic(model: Model):
     pass
