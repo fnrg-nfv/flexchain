@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 from para_placement.solution import *
-from para_placement.model import generate_vnf_list
+from para_placement.model import generate_vnf_set
 import time
 
 
@@ -22,6 +22,7 @@ def main():
     # vnf_list = generate_vnf_list()
     # for item in vnf_list:
     #     print(item)
+    pass
 
 
 if __name__ == '__main__':

@@ -4,6 +4,7 @@ import random
 
 import warnings
 import matplotlib.cbook
+import math
 
 warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 fig, ax = plt.subplots()
@@ -12,7 +13,7 @@ fig.set_tight_layout(False)
 
 # random generate topo with 100 nodes
 # node CPU capacity: 4000~8000 Mhz
-# node connectivity: 0.1
+# node connectivity: log(n) / n
 # edge latency: 2~5 ms
 # edge bandwidth: 1000~10000 Mbps todo
 
@@ -21,9 +22,10 @@ def generate_randomly(size: int = 100):
     for i in range(size):
         topo.add_node(i, computing_resource=random.randint(4000, 8000))
 
+    connectivity = (math.log2(size) - 2) / size
     for i in range(size):
         for j in range(i + 1, size):
-            if random.randint(1, 10) == 1:
+            if random.uniform(0, 1) < connectivity:
                 topo.add_edge(i, j, bandwidth=random.randint(1000, 10000), latency=random.uniform(2, 5))
 
     return topo

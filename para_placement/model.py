@@ -72,13 +72,11 @@ class SFC(BaseObject):
         self.d = d
         self.idx = idx
 
-        self.vnf_latency_sum: float = 0
-        self.vnf_computing_resources_sum: int = 0
-        for vnf in vnf_list:
-            self.vnf_latency_sum += vnf.latency
-            self.vnf_computing_resources_sum += vnf.computing_resource
+        self.vnf_latency_sum: float = sum(vnf.latency for vnf in vnf_list)
+        self.vnf_computing_resources_sum: int = sum(vnf.computing_resource for vnf in vnf_list)
 
         self.accepted_configuration: Configuration = None
+        self.configurations: List[Configuration] = []
 
     def __str__(self):
         return "({}, {}, {}, {}->{})".format(self.vnf_list, self.latency, self.throughput, self.s, self.d)
@@ -111,13 +109,31 @@ class Model(BaseObject):
         nx.draw(self.topo, with_labels=True)
         plt.show()
 
-    def output_result(self, filename="result.txt"):
+    def output_accepted_configuration(self, filename="ilp_result.txt"):
         with open(filename, "w+") as output:
-            for sfc in filter(lambda s: s.accepted_configuration is not None, self.sfc_list):
+            for sfc in self.get_accepted_sfc_list():
                 output.write("C {}\t{}\n".format(sfc.accepted_configuration.name, sfc.accepted_configuration))
             output.close()
 
-def generate_vnf_list(size=30):
+    def output_configurations(self, filename="lp_result.txt"):
+        with open(filename, "w+") as output:
+            for sfc in self.sfc_list:
+                for configuration in sfc.configurations:
+                    if configuration.var.varValue > 0:
+                        output.write(
+                            "C {}: {}\t{}\n".format(configuration.name, configuration.var.varValue, configuration))
+            output.close()
+
+    def get_accepted_sfc_list(self):
+        return list(filter(lambda s: s.accepted_configuration is not None, self.sfc_list))
+
+    def clear(self):
+        for sfc in self.sfc_list:
+            sfc.accepted_configuration = None
+            sfc.configurations = []
+
+
+def generate_vnf_set(size: int = 30) -> List[VNF]:
     vnf_list = []
     readable_fields = {0, 1, 2, 3, 4}
     writeable_fields = {0, 1, 2, 3, 4}
@@ -126,14 +142,15 @@ def generate_vnf_list(size=30):
         computing_resource = random.randint(400, 800)
         read_fields = set()
         for item in readable_fields:
-            if random.randint(0,1):
+            if random.randint(0, 1):
                 read_fields.add(item)
         write_fields = set()
         for item in writeable_fields:
-            if random.randint(0,1):
+            if random.randint(0, 1):
                 write_fields.add(item)
         vnf_list.append(VNF(latency, computing_resource, read_fields, write_fields))
-    return vnf_list        
+    return vnf_list
+
 
 # random generate 100 service function chains
 # number of vnf: 5~8
@@ -142,14 +159,14 @@ def generate_vnf_list(size=30):
 # sfc latency demand: 10~30 ms
 # sfc throughput demand: 32~128 Mbps todo
 
-def generate_sfc_list(topo: nx.Graph, size=100):
+def generate_sfc_list(topo: nx.Graph, vnf_set: List[VNF], size=100):
     ret = []
     nodes_len = len(topo.nodes)
     for i in range(size):
         n = random.randint(4, 7)
         vnf_list = []
         for j in range(n):
-            vnf_list.append(VNF(latency=random.uniform(0.2, 2), computing_resource=random.randint(400, 800)))
+            vnf_list.append(random.choice(vnf_set))
         s = random.randint(1, nodes_len - 1)
         d = random.randint(1, nodes_len - 1)
         while d == s:
@@ -158,9 +175,10 @@ def generate_sfc_list(topo: nx.Graph, size=100):
     return ret
 
 
-def generate_model(topo_size: int = 100, sfc_size: int = 100) -> Model:
+def generate_model(topo_size: int = 64, sfc_size: int = 100) -> Model:
     topo = topology.generate_randomly(topo_size)
-    sfc_list = generate_sfc_list(topo, sfc_size)
+    vnf_set = generate_vnf_set()
+    sfc_list = generate_sfc_list(topo, vnf_set, sfc_size)
     return Model(topo, sfc_list)
 
 
@@ -185,7 +203,7 @@ class Configuration(BaseObject):
         for i in range(len(route) - 1):
             start = max(route[i], route[i + 1])
             end = min(route[i], route[i + 1])
-            self.edges.append("%d:%d" % (start, end))
+            self.edges.append((start, end))
 
         self.l = 9999999  # used to find optimal situation
 
@@ -238,10 +256,10 @@ class Configuration(BaseObject):
         sub_chain_latency = self.sfc.vnf_list[0].latency
         for i in range(len(optimal_para)):
             if optimal_para[i] == 1:
-                sub_chain_latency = max(sub_chain_latency, self.sfc.vnf_list[i + 1])
+                sub_chain_latency = max(sub_chain_latency, self.sfc.vnf_list[i + 1].latency)
             else:
                 total_latency += sub_chain_latency
-                sub_chain_latency = self.sfc.vnf_list[i + 1]
+                sub_chain_latency = self.sfc.vnf_list[i + 1].latency
         total_latency += sub_chain_latency
 
         return total_latency
@@ -338,8 +356,6 @@ def _generate_route_list(topo: nx.Graph, sfc: SFC):
                     stack.append(
                         (new_route, latency + adjacent[index]['latency']))
 
-    print("Size of path set: %d" % len(route_set))
-
     return route_set
 
 
@@ -386,8 +402,6 @@ def generate_configurations_for_one_sfc(topo: nx.Graph, sfc: SFC) -> List[Config
     for idx, item in enumerate(route_list):
         route, latency = item
         configuration_list.extend(_generate_configurations_for_one_route(topo, route, latency, sfc, idx))
-
-    print("Size of configuration set: %d" % len(configuration_list))
 
     return configuration_list
 

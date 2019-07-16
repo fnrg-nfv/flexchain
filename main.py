@@ -7,23 +7,20 @@ def main():
 
     Configuration.para = True
 
-    model = generate_model(32, 200)
-    model.save(file_name="model_data.pkl")
+    model = generate_model(64, 100)
+    # model.save(file_name="model_data.pkl")
     # model = Model.load(file_name="model_data.pkl")
-
     model.draw_topo()
 
-    classic_lp(model)
+    greedy(model)
 
-    model.save(file_name="para_solved_model.pkl")
-    # model = Model.load(file_name="solved_model.pkl")
+    model.clear()
 
-    lp_to_ilp(model)
-
-
-def main2():
-    a = set() | set()
+    linear_programming(model)
+    model.output_configurations()
+    rounding_to_integral(model)
+    model.output_accepted_configuration()
 
 
 if __name__ == '__main__':
-    main2()
+    main()
