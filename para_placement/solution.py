@@ -7,7 +7,7 @@ import copy
 epsilon = 0.03
 
 
-def linear_programming(model: Model) -> float:
+def linear_programming(model: Model) -> (float, int):
     print("\n>>> Start LP <<<")
     problem = LpProblem("VNF Placement", LpMaximize)
 
@@ -33,7 +33,7 @@ def linear_programming(model: Model) -> float:
         sfc in model.sfc_list), "Total number of accept requests minus total latency"
 
     # Constraints
-    print(">> Subjective function init, ", end="")
+    print(">> Subjective function init", end="")
     # basic constraints
     print(", Basic", end="")
     for sfc in model.sfc_list:
@@ -65,34 +65,68 @@ def linear_programming(model: Model) -> float:
     for sfc in model.sfc_list:
         sfc.configurations = list(filter(lambda c: c.var.varValue > 0, sfc.configurations))
 
-    print("Objective Value: {}({})".format(value(problem.objective),
-                                           sum(len(sfc.configurations) > 0 for sfc in model.sfc_list)))
+    obj_val = value(problem.objective)
+    accept_sfc_number = sum(len(sfc.configurations) > 0 for sfc in model.sfc_list)
+    print("Objective Value: {}({})".format(obj_val, accept_sfc_number))
 
-    return value(problem.objective)
+    return obj_val, accept_sfc_number
 
 
-# find the near optimal solution from LP
-def rounding_to_integral(model: Model) -> float:
-    print("\n>>> Start Rounding <<<")
-    for sfc in model.sfc_list:
+def rounding_one(model: Model):
+    """
+    Rounding method: x < 1.0 => x = 0
+                     x = 1.0 => x = 1.0
+    :param model:
+    :return:
+    """
+    print(">> One Rounding <<")
+
+    sfc_list = list(filter(lambda s: len(s.configurations) > 0, model.sfc_list))
+
+    for sfc in sfc_list:
+        for configuration in sfc.configurations:
+            if configuration.var.varValue == 1:
+                sfc.accepted_configuration = configuration
+                if evaluate(model):
+                    break
+                else:
+                    sfc.accepted_configuration = None
+
+    if not model.get_accepted_sfc_list():
+        rounding_greedy(model)
+
+
+def rounding_greedy(model: Model):
+    """
+    Rounding method:
+    1. SFCs are sorted by resource usage ratio
+    2. Configurations are sorted by its var value
+    3. Traverse and choose the available configuration
+    :param model:
+    :return:
+    """
+    print(">> Greedy Rounding <<")
+    sfc_list = list(filter(lambda s: len(s.configurations) > 0, model.sfc_list))
+
+    for sfc in sfc_list:
         sfc.configurations.sort(key=lambda c: c.var.varValue, reverse=True)  # varValue, latency, cr ratio
 
     # sfc sorted by computing resource ratio
-    sfc_list = list(filter(lambda s: len(s.configurations) > 0, model.sfc_list))
-
     sfc_list.sort(key=lambda s: s.configurations[0].computing_resource_ratio(model.topo))
 
-    # choose a configuration (maybe none) for each sfc
-    # todo
     for sfc in sfc_list:
-        passed = False
         for configuration in sfc.configurations:
             sfc.accepted_configuration = configuration
             if evaluate(model):
-                passed = True
                 break
-        if not passed:
-            sfc.accepted_configuration = None
+            else:
+                sfc.accepted_configuration = None
+
+
+def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (float, int):
+    print("\n>>> Start Rounding <<<")
+
+    rounding_method(model)
 
     accepted_sfc_list = model.get_accepted_sfc_list()
 
@@ -110,13 +144,15 @@ def rounding_to_integral(model: Model) -> float:
                                      for sfc in accepted_sfc_list
                                      if (start, end) in sfc.accepted_configuration.edges)
         linear_programming(model2)
-        rounding_to_integral(model2)
+        rounding_to_integral(model2, rounding_method)
 
-    print("Objective Value: {} ({}, {})".format(objective_value(model, epsilon),
+    obj_val = objective_value(model, epsilon)
+    accept_sfc_number = len(model.get_accepted_sfc_list())
+    print("Objective Value: {} ({}, {})".format(obj_val,
                                                 evaluate(model),
-                                                len(model.get_accepted_sfc_list())))
+                                                accept_sfc_number))
 
-    return objective_value(model, epsilon)
+    return obj_val, accept_sfc_number
 
 
 # Greedy
@@ -141,7 +177,7 @@ def is_configuration_valid(topo, sfc, configuration):
     return True
 
 
-def greedy(model: Model):
+def greedy(model: Model) -> (float, int):
     """
     Greedy thought:
         Sort sfc's latency in increasing order
@@ -164,10 +200,12 @@ def greedy(model: Model):
                 break
         print("\r>> You have finished {}/{} sfcs' placements".format(idx + 1, len(sfcs)), end='')
 
-    if evaluate(model):
-        print("\nObjective: {}({})".format(objective_value(model, epsilon), len(model.get_accepted_sfc_list())))
-    else:
-        print("\nGreedy FAILED...")
+    obj_val = objective_value(model, epsilon)
+    accept_sfc_number = len(model.get_accepted_sfc_list())
+    print("\nObjective Value: {} ({}, {})".format(obj_val,
+                                                  evaluate(model),
+                                                  accept_sfc_number))
+    return obj_val, accept_sfc_number
 
 
 # genetic algorithm (not necessary)

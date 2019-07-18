@@ -88,9 +88,7 @@ class Model(BaseObject):
         self.sfc_list = sfc_list
 
     def __str__(self):
-        return "TOPO-nodes:{}:{}\nTOPO-edges:{}:{}\nSFCs:{}".format(len(self.topo.nodes), self.topo.nodes.data(),
-                                                                    len(self.topo.edges), self.topo.edges.data(),
-                                                                    self.sfc_list)
+        return "TOPO-nodes:{}\tedges:{}\tSFCs:{}".format(len(self.topo.nodes), len(self.topo.edges), len(self.sfc_list))
 
     def save(self, file_name='model_data.pkl'):
         with open(file_name, 'wb') as output:
@@ -105,7 +103,7 @@ class Model(BaseObject):
             return model
 
     def draw_topo(self):
-        print(self.topo)
+        print(self)
         nx.draw(self.topo, with_labels=True)
         plt.show()
 
@@ -216,7 +214,7 @@ class Configuration(BaseObject):
     # latency (normal & para)
     def get_latency(self) -> float:
         if Configuration.para:
-            return self._route_latency + self.para_latency_analysis()  # todo return para latency
+            return self._route_latency + self.para_latency_analysis()
         return self._route_latency + self.sfc.vnf_latency_sum
 
     # get the max resource usage ratio
@@ -309,7 +307,7 @@ class Configuration(BaseObject):
         # find the shortest distance to every point
 
 
-def _dijkstra(topo: nx.Graph, s: int) -> {}:  # todo
+def _dijkstra(topo: nx.Graph, s: int) -> {}:
     ret = {}
     heap = [(0, s)]
     while heap:
