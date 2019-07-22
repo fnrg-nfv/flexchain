@@ -102,8 +102,11 @@ class Model(BaseObject):
             input_file.close()
             return model
 
-    def draw_topo(self):
+    def draw_topo(self, level=0):
         print(self)
+        if level is 1:
+            print(self.topo.nodes.data())
+            print(self.topo.edges.data())
         nx.draw(self.topo, with_labels=True)
         plt.show()
 
@@ -157,19 +160,19 @@ def generate_vnf_set(size: int = 30) -> List[VNF]:
 # sfc latency demand: 10~30 ms
 # sfc throughput demand: 32~128 Mbps todo
 
-def generate_sfc_list(topo: nx.Graph, vnf_set: List[VNF], size=100):
+def generate_sfc_list(topo: nx.Graph, vnf_set: List[VNF], size=100, base_idx=0):
     ret = []
-    nodes_len = len(topo.nodes)
     for i in range(size):
         n = random.randint(4, 7)
         vnf_list = []
         for j in range(n):
             vnf_list.append(random.choice(vnf_set))
-        s = random.randint(1, nodes_len - 1)
-        d = random.randint(1, nodes_len - 1)
-        while d == s:
-            d = random.randint(1, nodes_len - 1)
-        ret.append(SFC(vnf_list, latency=random.randint(10, 30), throughput=random.randint(100, 1000), s=s, d=d, idx=i))
+        nodes = list(topo.nodes.keys())
+        s = random.choice(nodes)
+        nodes.remove(s)
+        d = random.choice(nodes)
+        ret.append(SFC(vnf_list, latency=random.randint(10, 30), throughput=random.randint(100, 1000), s=s, d=d,
+                       idx=i + base_idx))
     return ret
 
 
@@ -307,7 +310,7 @@ class Configuration(BaseObject):
         # find the shortest distance to every point
 
 
-def _dijkstra(topo: nx.Graph, s: int) -> {}:
+def _dijkstra(topo: nx.Graph, s) -> {}:
     ret = {}
     heap = [(0, s)]
     while heap:
@@ -395,6 +398,8 @@ def _generate_configurations_for_one_route(topo: nx.Graph, route: List[int], rou
 # all configuration for one sfc
 def generate_configurations_for_one_sfc(topo: nx.Graph, sfc: SFC) -> List[Configuration]:
     route_list = _generate_route_list(topo, sfc)
+
+    print(" ... Size of route_list: {}".format(len(route_list)), end="")
 
     configuration_list = []
     for idx, item in enumerate(route_list):

@@ -34,3 +34,10 @@ def objective_value(model: Model, epsilon: float) -> float:
         sfc.accepted_configuration.get_latency() for sfc in accepted_sfc_list)
 
     return objective
+
+
+def average_latency(model: Model) -> float:
+    accepted_sfc_list = model.get_accepted_sfc_list()
+    if len(accepted_sfc_list) == 0:
+        return 0
+    return sum(sfc.accepted_configuration.get_latency() for sfc in accepted_sfc_list) / len(accepted_sfc_list)

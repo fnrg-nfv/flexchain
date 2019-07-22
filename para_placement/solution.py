@@ -1,13 +1,13 @@
 from pulp import *
 
-from para_placement.evaluation import evaluate, objective_value
+from para_placement.evaluation import *
 from para_placement.model import *
 import copy
 
 epsilon = 0.03
 
 
-def linear_programming(model: Model) -> (float, int):
+def linear_programming(model: Model) -> (float, int, float):
     print("\n>>> Start LP <<<")
     problem = LpProblem("VNF Placement", LpMaximize)
 
@@ -67,9 +67,14 @@ def linear_programming(model: Model) -> (float, int):
 
     obj_val = value(problem.objective)
     accept_sfc_number = sum(len(sfc.configurations) > 0 for sfc in model.sfc_list)
-    print("Objective Value: {}({})".format(obj_val, accept_sfc_number))
+    latency = 0
+    if accept_sfc_number is not 0:
+        latency = sum(
+            configuration.get_latency() * configuration.var.varValue for sfc in model.sfc_list for configuration in
+            sfc.configurations) / accept_sfc_number
+    print("Objective Value: {}({}, {}ms)".format(obj_val, accept_sfc_number, latency))
 
-    return obj_val, accept_sfc_number
+    return obj_val, accept_sfc_number, latency
 
 
 def rounding_one(model: Model):
@@ -148,11 +153,10 @@ def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (floa
 
     obj_val = objective_value(model, epsilon)
     accept_sfc_number = len(model.get_accepted_sfc_list())
-    print("Objective Value: {} ({}, {})".format(obj_val,
-                                                evaluate(model),
-                                                accept_sfc_number))
+    latency = average_latency(model)
+    print("Objective Value: {} ({}, {}, {})".format(obj_val, evaluate(model), accept_sfc_number, latency))
 
-    return obj_val, accept_sfc_number
+    return obj_val, accept_sfc_number, latency
 
 
 # Greedy
@@ -177,7 +181,7 @@ def is_configuration_valid(topo, sfc, configuration):
     return True
 
 
-def greedy(model: Model) -> (float, int):
+def greedy(model: Model) -> (float, int, float):
     """
     Greedy thought:
         Sort sfc's latency in increasing order
@@ -202,10 +206,9 @@ def greedy(model: Model) -> (float, int):
 
     obj_val = objective_value(model, epsilon)
     accept_sfc_number = len(model.get_accepted_sfc_list())
-    print("\nObjective Value: {} ({}, {})".format(obj_val,
-                                                  evaluate(model),
-                                                  accept_sfc_number))
-    return obj_val, accept_sfc_number
+    latency = average_latency(model)
+    print("\nObjective Value: {} ({}, {}, {})".format(obj_val, evaluate(model), accept_sfc_number, latency))
+    return obj_val, accept_sfc_number, latency
 
 
 # genetic algorithm (not necessary)
