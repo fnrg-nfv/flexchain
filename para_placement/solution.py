@@ -1,10 +1,9 @@
 from pulp import *
 
+from para_placement.config import EPSILON
 from para_placement.evaluation import *
 from para_placement.model import *
 import copy
-
-epsilon = 0.03
 
 
 def linear_programming(model: Model) -> (float, int, float):
@@ -28,7 +27,7 @@ def linear_programming(model: Model) -> (float, int, float):
     print(">> Objective function init...")
     # Objective function
     problem += lpSum(
-        (configuration.var * (1 - epsilon * configuration.get_latency()) for configuration in sfc.configurations)
+        (configuration.var * (1 - EPSILON * configuration.get_latency()) for configuration in sfc.configurations)
         for
         sfc in model.sfc_list), "Total number of accept requests minus total latency"
 
@@ -151,7 +150,7 @@ def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (floa
         linear_programming(model2)
         rounding_to_integral(model2, rounding_method)
 
-    obj_val = objective_value(model, epsilon)
+    obj_val = objective_value(model, EPSILON)
     accept_sfc_number = len(model.get_accepted_sfc_list())
     latency = average_latency(model)
     print("Objective Value: {} ({}, {}, {})".format(obj_val, evaluate(model), accept_sfc_number, latency))
@@ -184,10 +183,10 @@ def is_configuration_valid(topo, sfc, configuration):
 def greedy(model: Model) -> (float, int, float):
     """
     Greedy thought:
-        Sort sfc's latency in increasing order
-        For every sfc, sort s to d path's latency in increasing order
-        Find the first path whose resources can fulfil sfc requirement
-        Not find then reject!
+        Sort sfcs by its computing resources consumption in the increasing order
+        For every sfc, sort each available configuration by its latency in the increasing order
+        Find the first path whose resources can fulfill the requirement of sfc
+        If no available path is found, reject the sfc!
     """
     print("\n>>> Greedy Start <<<")
 
@@ -204,7 +203,44 @@ def greedy(model: Model) -> (float, int, float):
                 break
         print("\r>> You have finished {}/{} sfcs' placements".format(idx + 1, len(sfcs)), end='')
 
-    obj_val = objective_value(model, epsilon)
+    obj_val = objective_value(model, EPSILON)
+    accept_sfc_number = len(model.get_accepted_sfc_list())
+    latency = average_latency(model)
+    print("\nObjective Value: {} ({}, {}, {})".format(obj_val, evaluate(model), accept_sfc_number, latency))
+    return obj_val, accept_sfc_number, latency
+
+
+def greedy2(model: Model) -> (float, int, float):
+    """
+    Greedy thought:
+        Sort sfcs by its computing resources and bandwidth consumption in the increasing order
+        For every sfc, sort each available configuration by its latency in the increasing order
+        Find the first path whose resources can fulfill the requirement of sfc
+        If no available path is found, reject the sfc!
+    """
+    print("\n>>> Greedy Start <<<")
+
+    topo = copy.deepcopy(model.topo)
+    sfcs = model.sfc_list
+    sfcs.sort(key=lambda x: x.vnf_computing_resources_sum)
+
+    for idx, sfc in enumerate(sfcs):
+        sfc.rank = idx
+    sfcs.sort(key=lambda x: x.throughput)
+    for idx, sfc in enumerate(sfcs):
+        sfc.rank += idx
+    sfcs.sort(key=lambda x: x.rank)
+
+    for idx, sfc in enumerate(sfcs):
+        configurations = generate_configurations_for_one_sfc(topo, sfc)
+        configurations.sort(key=lambda x: x.get_latency())
+        for configuration in configurations:
+            if is_configuration_valid(topo, sfc, configuration):
+                sfc.accepted_configuration = configuration
+                break
+        print("\r>> You have finished {}/{} sfcs' placements".format(idx + 1, len(sfcs)), end='')
+
+    obj_val = objective_value(model, EPSILON)
     accept_sfc_number = len(model.get_accepted_sfc_list())
     latency = average_latency(model)
     print("\nObjective Value: {} ({}, {}, {})".format(obj_val, evaluate(model), accept_sfc_number, latency))

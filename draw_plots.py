@@ -1,4 +1,6 @@
 import pickle
+from itertools import cycle
+
 import matplotlib.pyplot as plt
 
 
@@ -16,18 +18,21 @@ def main():
 
 
 def draw_plot(result, save_file_name=''):
-    x = [key for key in result]
-    index = 0
-    y_optimal = [result[key]["optimal"][index] for key in result]
-    y_greedy = [result[key]["greedy"][index] for key in result]
-    y_heuristic1 = [result[key]["ILP greedy"][index] for key in result]
-    y_heuristic2 = [result[key]["ILP one"][index] for key in result]
+    x = [key for key in result]  # number of sfc requests
+    index = 0  # objective value
 
-    # 在当前绘图对象中画图（x轴,y轴,给所绘制的曲线的名字，画线颜色，画线宽度）
-    plt.plot(x, y_optimal, label="optimal", color="red", linewidth=1)
-    plt.plot(x, y_greedy, label="greedy", color="blue", linewidth=1)
-    plt.plot(x, y_heuristic1, label="ILP greedy", color="brown", linewidth=1)
-    plt.plot(x, y_heuristic2, label="ILP one", color="black", linewidth=1)
+    data = {}
+
+    for size in result:
+        for legend in result[size]:
+            if legend not in data:
+                data[legend] = []
+            data[legend].append(result[size][legend][index])
+
+    cycol = cycle('bgrcmk')
+
+    for legend in data:
+        plt.plot(x, data[legend], label=legend, color=next(cycol), linewidth=1)
 
     # X轴的文字
     plt.xlabel("Number of SFC Requests")

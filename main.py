@@ -1,87 +1,88 @@
 #!/usr/bin/python3
+from draw_plots import draw_plot
+from para_placement.helper import extract_str, current_time, save_obj
 from para_placement.solution import *
-import uuid
 
 topo_files = ['./gml_data/Cernet.gml', './gml_data/Geant2012.gml', './gml_data/Internetmci.gml']
 
 
 def main():
-    print("PLACEMENT MAIN")
-
     # parameter init
     Configuration.para = True
+    gml_filename = topo_files[0]
 
     # model init
-    topo = topology.parse_gml(topo_files[1])
+    topo = topology.parse_gml(gml_filename)
     vnf_set = generate_vnf_set(size=50)
     model = Model(topo, [])
 
-    model.draw_topo(level=1)
+    model.draw_topo()
 
-    iter_times = 8
-    unit = 25
+    iter_times = 10
+    unit = 50
     result = {}
+    temple_files = []
 
     for i in range(iter_times):
-        model.sfc_list.extend(generate_sfc_list(topo=topo, vnf_set=vnf_set, size=unit, base_idx=i * unit))
         model.clear()
+        model.sfc_list.extend(generate_sfc_list(topo=topo, vnf_set=vnf_set, size=unit, base_idx=i * unit))
         size = unit * i + unit
         result[size] = iteration(model)
+        temple_files.append("result_{}_{}_{}.pkl".format(extract_str(gml_filename), size, current_time()))
+        save_obj(result[size], temple_files[-1])
 
-    file_name = "result_Geant2012.pkl"
-    with open(file_name, 'wb') as output:
-        pickle.dump(result, output, pickle.HIGHEST_PROTOCOL)
-        output.close()
+    filename = "result_{}_{}.pkl".format(extract_str(gml_filename), current_time())
+    print(filename)
+    save_obj(result, filename)
+
+    draw_plot(result, "result_{}_{}".format(extract_str(gml_filename), current_time()))
+
+    for temple_file in temple_files:
+        os.remove(temple_file)
 
 
-def iteration(model):
-    ob1 = greedy(model)
+def iteration(model: Model):
+    print("PLACEMENT MAIN")
+    ret = dict()
+
     model.clear()
-    optimal = linear_programming(model)
-    file_name = "solved_model_{}.pkl".format(uuid.uuid4())
-    model.save(file_name)
-    ob2 = rounding_to_integral(model, rounding_method=rounding_greedy)
-    model = Model.load(file_name)
-    ob3 = rounding_to_integral(model, rounding_method=rounding_one)
-    os.remove(file_name)
+    ret['greedy'] = greedy(model)
 
-    print("\n>>>>>>>>>> Result Summary <<<<<<<<<<")
-    print(model)
-    print()
-    print('optimal: {}'.format(optimal))
-    print('greedy: {}'.format(ob1))
-    print('ILP greedy: {}'.format(ob2))
-    print('ILP one+greedy: {}'.format(ob3))
-    return {
-        "optimal": optimal,
-        "greedy": ob1,
-        "ILP greedy": ob2,
-        "ILP one": ob3
-    }
+    # model.clear()
+    # ret['greedy 2'] = greedy2(model)
+
+    model.clear()
+    ret['optimal'] = linear_programming(model)
+    # filename = "solved_model_{}.pkl".format(uuid.uuid4())
+    # model.save(filename)
+    # ret['ILP greedy'] = rounding_to_integral(model, rounding_method=rounding_greedy)
+    #
+    # model = Model.load(filename)
+    ret['ILP one'] = rounding_to_integral(model, rounding_method=rounding_one)
+    # os.remove(filename)
+
+    print("\n>>>>>>>>>>>>>>>>>> Result Summary <<<<<<<<<<<<<<<<<<")
+    print("Para: {}\t{}\n".format(Configuration.para, model))
+    for key in ret:
+        print("{}: {}".format(key, ret[key]))
+
+    return ret
 
 
-def main2():
-    file_name = topo_files[0]
+def main_single():
+    filename = topo_files[1]
 
     # model init
-    topo = topology.parse_gml(file_name)
+    topo = topology.parse_gml(filename)
     vnf_set = generate_vnf_set(size=30)
-    result = {}
-
-    # for size in range(25, 201, 25):
-    size = 200
-    model = Model(topo, generate_sfc_list(topo, vnf_set, size))
+    sfc_size = 100
+    model = Model(topo, generate_sfc_list(topo, vnf_set, sfc_size))
     model.draw_topo()
+
     iteration(model)
-    result[size] = iteration(model)
-
-    file_name = "result_Geant2012.pkl".format(uuid.uuid4())
-    with open(file_name, 'wb') as output:
-        pickle.dump(result, output, pickle.HIGHEST_PROTOCOL)
-        output.close()
-
-    print(result)
+    Configuration.para = True
+    iteration(model)
 
 
 if __name__ == '__main__':
-    main()
+    main_single()

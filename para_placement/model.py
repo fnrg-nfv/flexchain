@@ -7,6 +7,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 from para_placement import topology
+from para_placement.config import NF_CONFIG, SFC_CONFIG
 
 
 class BaseObject(object):
@@ -88,7 +89,8 @@ class Model(BaseObject):
         self.sfc_list = sfc_list
 
     def __str__(self):
-        return "TOPO-nodes:{}\tedges:{}\tSFCs:{}".format(len(self.topo.nodes), len(self.topo.edges), len(self.sfc_list))
+        return "<{}>\tnodes:{}\tedges:{}\tSFCs:{}".format(self.topo.name, len(self.topo.nodes), len(self.topo.edges),
+                                                          len(self.sfc_list))
 
     def save(self, file_name='model_data.pkl'):
         with open(file_name, 'wb') as output:
@@ -104,9 +106,15 @@ class Model(BaseObject):
 
     def draw_topo(self, level=0):
         print(self)
+
         if level is 1:
-            print(self.topo.nodes.data())
-            print(self.topo.edges.data())
+            edges = list(self.topo.edges.data())
+            print("TOPO-nodes: {}".format(self.topo.nodes.data()))
+            print("TOPO-edges: ")
+            edges.sort(key=lambda e: e[2]['bandwidth'])
+            for info in edges:
+                print(info)
+
         nx.draw(self.topo, with_labels=True)
         plt.show()
 
@@ -139,31 +147,32 @@ def generate_vnf_set(size: int = 30) -> List[VNF]:
     readable_fields = {0, 1, 2, 3, 4}
     writeable_fields = {0, 1, 2, 3, 4}
     for i in range(size):
-        latency = random.uniform(0.2, 2)
-        computing_resource = random.randint(400, 800)
+        latency = random.uniform(NF_CONFIG['LT_LO'], NF_CONFIG['LT_HI'])
+        # latency = random.uniform(0.045, 0.3)
+        computing_resource = random.randint(NF_CONFIG['CPU_LO'], NF_CONFIG['CPU_HI'])
         read_fields = set()
         for item in readable_fields:
-            if random.randint(0, 1):
+            if random.choice([True, False, False]):
                 read_fields.add(item)
         write_fields = set()
         for item in writeable_fields:
-            if random.randint(0, 1):
+            if random.choice([True, False, False]):
                 write_fields.add(item)
         vnf_list.append(VNF(latency, computing_resource, read_fields, write_fields))
     return vnf_list
 
 
 # random generate 100 service function chains
-# number of vnf: 5~8
+# number of vnf: 3~7
 # vnf computing resource: 500~1000
 # vnf latency: 0.2~2 ms
 # sfc latency demand: 10~30 ms
-# sfc throughput demand: 32~128 Mbps todo
+# sfc throughput demand: 32~128 Mbps todo 50~500
 
 def generate_sfc_list(topo: nx.Graph, vnf_set: List[VNF], size=100, base_idx=0):
     ret = []
     for i in range(size):
-        n = random.randint(4, 7)
+        n = random.randint(SFC_CONFIG['VNF_LO'], SFC_CONFIG['VNF_HI'])
         vnf_list = []
         for j in range(n):
             vnf_list.append(random.choice(vnf_set))
@@ -171,7 +180,8 @@ def generate_sfc_list(topo: nx.Graph, vnf_set: List[VNF], size=100, base_idx=0):
         s = random.choice(nodes)
         nodes.remove(s)
         d = random.choice(nodes)
-        ret.append(SFC(vnf_list, latency=random.randint(10, 30), throughput=random.randint(100, 1000), s=s, d=d,
+        ret.append(SFC(vnf_list, latency=random.randint(SFC_CONFIG['LT_LO'], SFC_CONFIG['LT_HI']),
+                       throughput=random.randint(SFC_CONFIG['TP_LO'], SFC_CONFIG['TP_HI']), s=s, d=d,
                        idx=i + base_idx))
     return ret
 
