@@ -2,7 +2,7 @@ from para_placement.model import Model
 
 
 def evaluate(model: Model) -> bool:
-    accepted_sfc_list = list(filter(lambda s: s.accepted_configuration is not None, model.sfc_list))
+    accepted_sfc_list = model.get_accepted_sfc_list()
 
     # latency constraints
     for sfc in accepted_sfc_list:
@@ -21,7 +21,7 @@ def evaluate(model: Model) -> bool:
     for start, end, info in model.topo.edges.data():
         usage = sum(sfc.throughput
                     for sfc in accepted_sfc_list
-                    if "{}:{}".format(start, end) in sfc.accepted_configuration.edges)
+                    if (start, end) in sfc.accepted_configuration.edges)
         if usage > info['bandwidth']:
             return False
 
@@ -29,11 +29,15 @@ def evaluate(model: Model) -> bool:
 
 
 def objective_value(model: Model, epsilon: float) -> float:
-    objective = 0
-    accepted_sfc_list = list(filter(lambda s: s.accepted_configuration is not None, model.sfc_list))
-    objective += len(accepted_sfc_list)
-
-    for sfc in accepted_sfc_list:
-        objective -= sfc.accepted_configuration.get_latency() * epsilon
+    accepted_sfc_list = model.get_accepted_sfc_list()
+    objective = len(accepted_sfc_list) - epsilon * sum(
+        sfc.accepted_configuration.get_latency() for sfc in accepted_sfc_list)
 
     return objective
+
+
+def average_latency(model: Model) -> float:
+    accepted_sfc_list = model.get_accepted_sfc_list()
+    if len(accepted_sfc_list) == 0:
+        return 0
+    return sum(sfc.accepted_configuration.get_latency() for sfc in accepted_sfc_list) / len(accepted_sfc_list)

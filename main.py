@@ -1,29 +1,88 @@
 #!/usr/bin/python3
+from draw_plots import draw_plot
+from para_placement.helper import extract_str, current_time, save_obj
 from para_placement.solution import *
+
+topo_files = ['./gml_data/Cernet.gml', './gml_data/Geant2012.gml', './gml_data/Internetmci.gml']
 
 
 def main():
-    print("Placement Main")
-
+    # parameter init
     Configuration.para = True
+    gml_filename = topo_files[0]
 
-    model = generate_model(32, 200)
-    model.save(file_name="model_data.pkl")
-    # model = Model.load(file_name="model_data.pkl")
+    # model init
+    topo = topology.parse_gml(gml_filename)
+    vnf_set = generate_vnf_set(size=50)
+    model = Model(topo, [])
 
     model.draw_topo()
 
-    classic_lp(model)
+    iter_times = 10
+    unit = 50
+    result = {}
+    temple_files = []
 
-    model.save(file_name="para_solved_model.pkl")
-    # model = Model.load(file_name="solved_model.pkl")
+    for i in range(iter_times):
+        model.clear()
+        model.sfc_list.extend(generate_sfc_list(topo=topo, vnf_set=vnf_set, size=unit, base_idx=i * unit))
+        size = unit * i + unit
+        result[size] = iteration(model)
+        temple_files.append("result_{}_{}_{}.pkl".format(extract_str(gml_filename), size, current_time()))
+        save_obj(result[size], temple_files[-1])
 
-    lp_to_ilp(model)
+    filename = "result_{}_{}.pkl".format(extract_str(gml_filename), current_time())
+    print(filename)
+    save_obj(result, filename)
+
+    draw_plot(result, "result_{}_{}".format(extract_str(gml_filename), current_time()))
+
+    for temple_file in temple_files:
+        os.remove(temple_file)
 
 
-def main2():
-    a = set() | set()
+def iteration(model: Model):
+    print("PLACEMENT MAIN")
+    ret = dict()
+
+    model.clear()
+    ret['greedy'] = greedy(model)
+
+    # model.clear()
+    # ret['greedy 2'] = greedy2(model)
+
+    model.clear()
+    ret['optimal'] = linear_programming(model)
+    # filename = "solved_model_{}.pkl".format(uuid.uuid4())
+    # model.save(filename)
+    # ret['ILP greedy'] = rounding_to_integral(model, rounding_method=rounding_greedy)
+    #
+    # model = Model.load(filename)
+    ret['ILP one'] = rounding_to_integral(model, rounding_method=rounding_one)
+    # os.remove(filename)
+
+    print("\n>>>>>>>>>>>>>>>>>> Result Summary <<<<<<<<<<<<<<<<<<")
+    print("Para: {}\t{}\n".format(Configuration.para, model))
+    for key in ret:
+        print("{}: {}".format(key, ret[key]))
+
+    return ret
+
+
+def main_single():
+    filename = topo_files[1]
+
+    # model init
+    topo = topology.parse_gml(filename)
+    vnf_set = generate_vnf_set(size=30)
+    sfc_size = 100
+    model = Model(topo, generate_sfc_list(topo, vnf_set, sfc_size))
+    model.draw_topo()
+
+    iteration(model)
+    Configuration.para = True
+    iteration(model)
 
 
 if __name__ == '__main__':
-    main2()
+    main_single()
