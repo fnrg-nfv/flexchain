@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 from draw_plots import draw_plot
-from para_placement.helper import extract_str, current_time, save_obj
+from para_placement import topology
+from para_placement.helper import *
+from para_placement.model_dc import generate_configurations_dc
 from para_placement.solution import *
 
 topo_files = ['./gml_data/Cernet.gml', './gml_data/Geant2012.gml', './gml_data/Internetmci.gml']
@@ -41,6 +43,7 @@ def main():
         os.remove(temple_file)
 
 
+@print_run_time
 def iteration(model: Model):
     print("PLACEMENT MAIN")
     ret = dict()
@@ -77,11 +80,23 @@ def main_single():
     vnf_set = generate_vnf_set(size=30)
     sfc_size = 100
     model = Model(topo, generate_sfc_list(topo, vnf_set, sfc_size))
-    model.draw_topo()
+    model.draw_topo(level=1)
 
     iteration(model)
     Configuration.para = True
     iteration(model)
+
+
+@print_run_time
+def main_dc():
+    Configuration.para = True
+    topo = topology.data_center_example()
+    vnf_set = generate_vnf_set(size=30)
+    sfc_size = 20
+    model = Model(topo, generate_sfc_list2(topo, vnf_set, sfc_size))
+    model.draw_topo(level=1)
+
+    linear_programming(model)
 
 
 if __name__ == '__main__':

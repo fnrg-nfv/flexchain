@@ -3,10 +3,10 @@ import pickle
 import random
 import string
 from typing import List
-import networkx as nx
-import matplotlib.pyplot as plt
 
-from para_placement import topology
+import matplotlib.pyplot as plt
+import networkx as nx
+
 from para_placement.config import NF_CONFIG, SFC_CONFIG
 
 
@@ -186,11 +186,22 @@ def generate_sfc_list(topo: nx.Graph, vnf_set: List[VNF], size=100, base_idx=0):
     return ret
 
 
-def generate_model(topo_size: int = 64, sfc_size: int = 100) -> Model:
-    topo = topology.generate_randomly(topo_size)
-    vnf_set = generate_vnf_set()
-    sfc_list = generate_sfc_list(topo, vnf_set, sfc_size)
-    return Model(topo, sfc_list)
+def generate_sfc_list2(topo: nx.Graph, vnf_set: List[VNF], size=100, base_idx=0):
+    ret = []
+    for i in range(size):
+        n = random.randint(SFC_CONFIG['VNF_LO'], SFC_CONFIG['VNF_HI'])
+        vnf_list = []
+        for j in range(n):
+            vnf_list.append(random.choice(vnf_set))
+
+        # switches = [s for s in topo.nodes if topo.nodes[s]['computing_resource'] == 0]
+        switches = [s for s in topo.nodes if 'L1' in s]
+        s = random.choice(switches)
+        d = random.choice(switches)
+        ret.append(SFC(vnf_list, latency=random.randint(SFC_CONFIG['LT_LO'], SFC_CONFIG['LT_HI']),
+                       throughput=random.randint(SFC_CONFIG['TP_LO'], SFC_CONFIG['TP_HI']), s=s, d=d,
+                       idx=i + base_idx))
+    return ret
 
 
 class Configuration(BaseObject):
@@ -210,11 +221,13 @@ class Configuration(BaseObject):
             self.computing_resource[pos] += vnf.computing_resource
 
         # throughput
-        self.edges = []
+        self.edges = {}
         for i in range(len(route) - 1):
             start = max(route[i], route[i + 1])
             end = min(route[i], route[i + 1])
-            self.edges.append((start, end))
+            if (start, end) not in self.edges:
+                self.edges[(start, end)] = 0
+            self.edges[(start, end)] = 1
 
         self.l = 9999999  # used to find optimal situation
 
@@ -348,7 +361,7 @@ def _generate_route_list(topo: nx.Graph, sfc: SFC):
 
     stack = [([s], 0)]
 
-    route_set = []
+    route_list = []
 
     while stack:
         route, latency = stack.pop()
@@ -357,17 +370,22 @@ def _generate_route_list(topo: nx.Graph, sfc: SFC):
             continue
 
         if route[-1] == d:
-            route_set.append((route, latency))
+            if sum(topo.nodes[key]['computing_resource'] for key in route) >= sfc.vnf_computing_resources_sum:
+                route_list.append((route, latency))
         else:
             adjacent = topo[route[-1]]
+            servers = [s for s in route if topo.nodes[s]['computing_resource'] > 0]
             for index in adjacent:
-                if index not in route:
-                    new_route = route[:]
-                    new_route.append(index)
-                    stack.append(
-                        (new_route, latency + adjacent[index]['latency']))
+                if index in servers:
+                    continue
+                if topo[route[-1]][index]['bandwidth'] < sfc.throughput:
+                    continue
+                new_route = route[:]
+                new_route.append(index)
+                stack.append(
+                    (new_route, latency + adjacent[index]['latency']))
 
-    return route_set
+    return route_list
 
 
 # bfs
@@ -418,12 +436,3 @@ def generate_configurations_for_one_sfc(topo: nx.Graph, sfc: SFC) -> List[Config
 
     return configuration_list
 
-
-# test
-def main():
-    model = generate_model(10, 10)
-    print(model)
-
-
-if __name__ == '__main__':
-    main()

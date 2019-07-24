@@ -1,12 +1,12 @@
-import networkx as nx
-import matplotlib.pyplot as plt
 import random
-
 import warnings
-import matplotlib.cbook
-import math
 
-from para_placement.config import TOPO_CONFIG
+import math
+import matplotlib.cbook
+import matplotlib.pyplot as plt
+import networkx as nx
+
+from para_placement.config import TOPO_CONFIG, TOPO_CONFIG2
 from para_placement.helper import extract_str
 
 warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
@@ -23,7 +23,7 @@ fig.set_tight_layout(False)
 def generate_randomly(size: int = 100):
     topo = nx.Graph()
     for i in range(size):
-        topo.add_node(i, computing_resource=random.randint(TOPO_CONFIG['CPU_LO'], TOPO_CONFIG['CPU_HI']))
+        topo.add_node(i, computing_resource=TOPO_CONFIG2.cpu())
 
     connectivity = (math.log2(size) - 2) / size
     for i in range(size):
@@ -57,7 +57,7 @@ def parse_gml(gml_file='./gml_data/Geant2012.gml'):
         if 'LinkSpeedRaw' in info and info['LinkSpeedRaw'] > 1000000 * TOPO_CONFIG['BW_LO']:
             info["bandwidth"] = info['LinkSpeedRaw'] / 1000000
         else:
-            info["bandwidth"] = random.randint(TOPO_CONFIG['BW_LO'], TOPO_CONFIG['BW_HI'])
+            info["bandwidth"] = 1000
         info['latency'] = random.uniform(TOPO_CONFIG['LT_LO'], TOPO_CONFIG['LT_HI'])
 
     topo.name = extract_str(gml_file)
@@ -65,18 +65,67 @@ def parse_gml(gml_file='./gml_data/Geant2012.gml'):
     return topo
 
 
-# test
-def __main():
-    topo = generate_randomly()
-    print("Num of edges: ", len(topo.edges))
-    print("Edges: ", topo.edges.data())
-    print("Nodes: ", topo.nodes.data())
+def data_center_example():
+    topo = nx.Graph()
+    topo.add_node("L1 S 1", computing_resource=0)
+    topo.add_node("L1 S 2", computing_resource=0)
+    topo.add_node("L2 S 1 1", computing_resource=0)
+    topo.add_node("L2 S 1 2", computing_resource=0)
+    topo.add_node("L2 S 1 3", computing_resource=0)
+    topo.add_node("L2 S 1 4", computing_resource=0)
+    topo.add_node("L2 S 2 1", computing_resource=0)
+    topo.add_node("L2 S 2 2", computing_resource=0)
+    topo.add_node("L2 S 2 3", computing_resource=0)
+    topo.add_node("L2 S 2 4", computing_resource=0)
+    topo.add_node("N 1 1", computing_resource=TOPO_CONFIG2.cpu())
+    topo.add_node("N 1 2", computing_resource=TOPO_CONFIG2.cpu())
+    topo.add_node("N 1 3", computing_resource=TOPO_CONFIG2.cpu())
+    topo.add_node("N 1 4", computing_resource=TOPO_CONFIG2.cpu())
+    topo.add_node("N 1 5", computing_resource=TOPO_CONFIG2.cpu())
+    topo.add_node("N 1 6", computing_resource=TOPO_CONFIG2.cpu())
+    topo.add_node("N 1 7", computing_resource=TOPO_CONFIG2.cpu())
+    topo.add_node("N 1 8", computing_resource=TOPO_CONFIG2.cpu())
+    topo.add_node("N 2 1", computing_resource=TOPO_CONFIG2.cpu())
+    topo.add_node("N 2 2", computing_resource=TOPO_CONFIG2.cpu())
+    topo.add_node("N 2 3", computing_resource=TOPO_CONFIG2.cpu())
+    topo.add_node("N 2 4", computing_resource=TOPO_CONFIG2.cpu())
+    topo.add_node("N 2 5", computing_resource=TOPO_CONFIG2.cpu())
+    topo.add_node("N 2 6", computing_resource=TOPO_CONFIG2.cpu())
+    topo.add_node("N 2 7", computing_resource=TOPO_CONFIG2.cpu())
+    topo.add_node("N 2 8", computing_resource=TOPO_CONFIG2.cpu())
 
-    print(topo[0])
+    topo.add_edge("L1 S 1", "L2 S 1 1", bandwidth=10000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L1 S 1", "L2 S 2 2", bandwidth=10000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L1 S 2", "L2 S 1 2", bandwidth=10000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L1 S 2", "L2 S 2 1", bandwidth=10000, latency=TOPO_CONFIG2.latency())
 
-    nx.draw(topo, with_labels=True)
-    plt.show()
+    topo.add_edge("L2 S 1 1", "L2 S 1 3", bandwidth=10000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 1 1", "L2 S 1 4", bandwidth=10000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 1 2", "L2 S 1 3", bandwidth=10000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 1 2", "L2 S 1 4", bandwidth=10000, latency=TOPO_CONFIG2.latency())
 
+    topo.add_edge("L2 S 2 1", "L2 S 2 3", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 2 1", "L2 S 2 4", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 2 2", "L2 S 2 3", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 2 2", "L2 S 2 4", bandwidth=1000, latency=TOPO_CONFIG2.latency())
 
-if __name__ == '__main__':
-    __main()
+    topo.add_edge("L2 S 1 3", "N 1 1", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 1 3", "N 1 2", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 1 3", "N 1 3", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 1 3", "N 1 4", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 1 4", "N 1 5", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 1 4", "N 1 6", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 1 4", "N 1 7", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 1 4", "N 1 8", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 2 3", "N 2 1", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 2 3", "N 2 2", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 2 3", "N 2 3", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 2 3", "N 2 4", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 2 4", "N 2 5", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 2 4", "N 2 6", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 2 4", "N 2 7", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+    topo.add_edge("L2 S 2 4", "N 2 8", bandwidth=1000, latency=TOPO_CONFIG2.latency())
+
+    topo.name = 'data center'
+
+    return topo

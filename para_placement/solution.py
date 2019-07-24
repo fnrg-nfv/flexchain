@@ -13,13 +13,14 @@ def linear_programming(model: Model) -> (float, int, float):
     print(">> Variables init...")
     for idx, sfc in enumerate(model.sfc_list):
         sfc.configurations = generate_configurations_for_one_sfc(model.topo, sfc)
-        print("\r>> You have generated {}/{} configuration sets".format(idx + 1, len(model.sfc_list)),
-              end='')
+        print("\r>> You have generated {}/{} configuration sets".format(idx + 1, len(model.sfc_list)), end='')
         # filter configurations whose latency is legal. IMPORTANT
         sfc.configurations = list(filter(lambda c: c.get_latency() <= sfc.latency, sfc.configurations))
 
         for configuration in sfc.configurations:
             configuration.var = LpVariable(configuration.name, 0, 1, LpContinuous)
+
+    print("\nVar sum: {}".format(sum(len(sfc.configurations) for sfc in model.sfc_list)))
 
     # total number of valid sfc
     print("\nValid sfc: {}".format(sum(len(s.configurations) > 0 for s in model.sfc_list)))
@@ -28,8 +29,7 @@ def linear_programming(model: Model) -> (float, int, float):
     # Objective function
     problem += lpSum(
         (configuration.var * (1 - EPSILON * configuration.get_latency()) for configuration in sfc.configurations)
-        for
-        sfc in model.sfc_list), "Total number of accept requests minus total latency"
+        for sfc in model.sfc_list), "Total number of accept requests minus total latency"
 
     # Constraints
     print(">> Subjective function init", end="")
@@ -50,11 +50,10 @@ def linear_programming(model: Model) -> (float, int, float):
     # throughput constraints
     print(", Throughput")
     for start, end, info in model.topo.edges.data():
-        problem += lpSum(configuration.var * sfc.throughput
+        problem += lpSum(configuration.var * sfc.throughput * configuration.edges[(start, end)]
                          for sfc in model.sfc_list
                          for configuration in sfc.configurations
-                         if (start, end) in configuration.edges) <= info[
-                       'bandwidth'], "TP_{}_{}".format(start, end)
+                         if (start, end) in configuration.edges) <= info['bandwidth'], "TP_{}_{}".format(start, end)
 
     # Problem solving
     print(">> Problem Solving...")
