@@ -1,7 +1,9 @@
 #!/usr/bin/python3
-from para_placement.solution import *
+from para_placement.topology import *
 from para_placement.model import generate_vnf_set
 import time
+import matplotlib.pyplot as plt
+import networkx as nx
 
 
 def main():
@@ -22,7 +24,10 @@ def main():
     # vnf_list = generate_vnf_list()
     # for item in vnf_list:
     #     print(item)
-    pass
+    topo = Bcube_topo(n=4, k=3)
+    # topo = Bcube_topo()
+    nx.draw(topo, with_labels=True)
+    plt.show()
 
 
 if __name__ == '__main__':

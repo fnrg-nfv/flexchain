@@ -129,3 +129,31 @@ def data_center_example():
     topo.name = 'data center'
 
     return topo
+
+def Bcube_topo(k=0, n=4):
+    """Standard Bcube topology
+    k: layers
+    n: num of servers
+    total n ^ (k+1) servers
+    """
+    topo = nx.Graph()
+    num_of_servers = n ** (k+1)
+    # add server first
+    for i in range(num_of_servers):
+        topo.add_node("Server " + str(i), computing_resource=TOPO_CONFIG2.cpu())
+
+    # add switch by layer
+    num_of_switches = int(num_of_servers / n)
+    for i in range(k+1):
+        index_interval = n ** i
+        num_of_one_group_switches = n ** i
+        for j in range(num_of_switches):
+            topo.add_node("Layer " + str(i) + "Switch " + str(j), computing_resource=0)
+            start_index_server = j % num_of_one_group_switches + (j // num_of_one_group_switches) * num_of_one_group_switches * n
+            for k in range(n):
+                server_index = start_index_server + k * index_interval
+                topo.add_edge("Server " + str(server_index), "Layer " + str(i) + "Switch " + str(j), bandwidth=1000, latency=TOPO_CONFIG2.latency())
+
+    topo.name = 'Bcube'
+
+    return topo
