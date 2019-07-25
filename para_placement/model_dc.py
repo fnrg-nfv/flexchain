@@ -5,27 +5,59 @@ from para_placement.config import K, EPSILON
 from para_placement.model import *
 
 
-def route_capacity(topo: nx.Graph, route: List):
+def _permutation_to_route(topo: nx.Graph, server_permutation):
+    return []
+
+
+def _generate_route_list_dc_by_server(topo: nx.Graph, sfc: SFC):
+    routes = []
+    servers = [node for node in topo.nodes if topo.nodes[node]['computing_resource'] > 0]
+
+    for i in range(1, len(sfc.vnf_list)):
+        for server_permutation in itertools.permutations(servers, i):
+            server_permutation = list(server_permutation)
+            if _route_capacity(topo, server_permutation) > sfc.vnf_computing_resources_sum:
+                routes.append(_permutation_to_route(topo, server_permutation))
+                if len(routes) > K:
+                    return routes
+
+    return routes
+
+
+def _route_capacity(topo: nx.Graph, route: List):
     return sum(topo.nodes[node]['computing_resource'] for node in route)
 
 
 def _generate_route_list_dc(topo: nx.Graph, sfc: SFC):
     routes = []
-    queue = [([sfc.s], 0)]
+    queue = [([sfc.s], 0, 0)]
+    sfc_len = len(sfc.vnf_list)
 
     servers = [node for node in topo.nodes if topo.nodes[node]['computing_resource'] > 0]
     servers.sort(key=lambda node: topo.nodes[node]['computing_resource'], reverse=True)
-    top_servers = servers[:len(sfc.vnf_list)]
+    top_servers = servers[:sfc_len]
     if sum(topo.nodes[server]['computing_resource'] for server in top_servers) < sfc.vnf_computing_resources_sum:
-        return []
+        return routes
+
+    route_server_size_max = 0
 
     while queue:
-        route, latency = queue.pop(0)
+        route, latency, route_servers_size = queue.pop(0)
+
+        # route_servers_size = sum(1 for node in route if topo.nodes[node]['computing_resource'] > 0)
+        if topo.nodes[route[-1]]['computing_resource'] > 0:
+            route_servers_size += 1
+        if route_server_size_max < route_servers_size:
+            route_server_size_max = route_servers_size
+            print(" -> {}".format(route_servers_size), end="")
+
+        if route_servers_size > sfc_len:
+            continue
 
         if latency > sfc.latency:
             continue
 
-        if route[-1] == sfc.d and route_capacity(topo, route) >= sfc.vnf_computing_resources_sum:
+        if route[-1] == sfc.d and _route_capacity(topo, route) >= sfc.vnf_computing_resources_sum:
             routes.append((route, latency))
             if len(routes) >= K:
                 break
@@ -33,20 +65,20 @@ def _generate_route_list_dc(topo: nx.Graph, sfc: SFC):
             adjacent_nodes = topo[route[-1]]
             for node in adjacent_nodes:
 
-                if node in route:
-                    if node in servers:
-                        continue
-                    loop_route = route[(len(route) - 1 - route[::-1].index(node)):]
-                    overlap = [i for i in loop_route if i in servers]
-                    if not overlap:
-                        continue
-
-                if sum(1 for i in route if i in servers) >= len(sfc.vnf_list) and node in servers:
+                available = True
+                for n in reversed(route):
+                    if n == node:
+                        available = False
+                        break
+                    if topo.nodes[n]['computing_resource'] > 0:
+                        break
+                if not available:
                     continue
 
                 new_route = route[:]
                 new_route.append(node)
-                queue.append((new_route, latency + adjacent_nodes[node]['latency']))  # latency here is not important
+                queue.append((new_route, latency + adjacent_nodes[node]['latency'],
+                              route_servers_size))  # latency here is not important
 
     return routes
 
@@ -89,6 +121,8 @@ def _generate_configurations_for_one_route_dc(topo: nx.Graph, route: List[int], 
 def generate_configurations_dc(topo: nx.Graph, sfc: SFC) -> List[Configuration]:
     configurations = []
     routes = _generate_route_list_dc(topo, sfc)
+
+    print(" ... Size of route_list: {}".format(len(routes)), end="")
 
     for idx, item in enumerate(routes):
         route, route_latency = item
@@ -167,18 +201,16 @@ def linear_programming_dc(model: Model) -> (float, int, float):
 
 
 def main():
-    Configuration.para = True
-    topo = topology.data_center_example()
-    vnf_set = generate_vnf_set(size=30)
-    sfc_size = 20
-    model = Model(topo, generate_sfc_list2(topo, vnf_set, sfc_size))
-    model.draw_topo()
-
-    sfc = model.sfc_list[0]
-    print(sfc)
-    configurations = generate_configurations_dc(topo, sfc)
-    for configuration in configurations:
-        print(configuration.place)
+    list1 = range(1, 17)
+    ret = []
+    # for i in range(1, 4):
+    #     ret.append(list())
+    idx = 0
+    for i in itertools.permutations(list1, 1):
+        print(list(i))
+        idx += 1
+        if idx > 100:
+            break
 
 
 if __name__ == '__main__':

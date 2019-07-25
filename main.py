@@ -97,6 +97,9 @@ def main_dc():
     model.draw_topo()
 
     linear_programming_dc(model)
+    rounding_to_integral(model, rounding_method=rounding_greedy)
+
+    linear_programming_dc(model)
     rounding_to_integral(model, rounding_method=rounding_one)
 
 
