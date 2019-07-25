@@ -203,3 +203,40 @@ def fat_tree_topo(n=4):
     topo.name = 'Fat-Tree'
 
     return topo
+
+def vl2_topo(port_num_of_aggregation_switch=4, port_num_of_tor_for_server=2):
+    """Standard vl2 topology
+    total port_num_of_aggregation_switch^2 / 4 * port_num_of_tor_for_server servers
+    """
+    topo = nx.Graph()
+    num_of_aggregation_switches = port_num_of_aggregation_switch
+    num_of_intermediate_switches = num_of_aggregation_switches // 2
+    num_of_ToR_switches = (port_num_of_aggregation_switch // 2) * (port_num_of_aggregation_switch // 2)
+
+    # create intermediate switch
+    for i in range(num_of_intermediate_switches):
+        topo.add_node("Intermediate switch {}".format(i), computing_resource=0)
+
+    # create aggregation switch
+    for i in range(num_of_aggregation_switches):
+        topo.add_node("Aggregation switch {}".format(i), computing_resource=0)
+        for j in range(num_of_intermediate_switches):
+            topo.add_edge("Aggregation switch {}".format(i), "Intermediate switch {}".format(j), bandwidth=1000, latency=TOPO_CONFIG2.latency())
+
+    # create ToR switch
+    num_of_ToR_switches_per_aggregation_switch_can_connect = num_of_aggregation_switches // 2
+    for i in range(num_of_ToR_switches):
+        topo.add_node("ToR switch {}".format(i), computing_resource=0)
+        aggregation_index = (i // num_of_ToR_switches_per_aggregation_switch_can_connect) * 2 # every ToR only need to connect 2 aggregation switch
+        topo.add_edge("ToR switch {}".format(i), "Aggregation switch {}".format(aggregation_index), bandwidth=1000, latency=TOPO_CONFIG2.latency())
+        aggregation_index += 1 # The second aggregation switch
+        topo.add_edge("ToR switch {}".format(i), "Aggregation switch {}".format(aggregation_index), bandwidth=1000, latency=TOPO_CONFIG2.latency())
+        # add server to ToR
+        for j in range(port_num_of_tor_for_server):
+            topo.add_node("ToR switch {} server {}".format(i, j), computing_resource=TOPO_CONFIG2.cpu())
+            topo.add_edge("ToR switch {} server {}".format(i, j), "ToR switch {}".format(i), bandwidth=1000, latency=TOPO_CONFIG2.latency())
+
+
+    topo.name = 'VL2'
+
+    return topo
