@@ -2,8 +2,8 @@
 from draw_plots import draw_plot
 from para_placement import topology
 from para_placement.helper import *
-from para_placement.model_dc import generate_configurations_dc, linear_programming_dc
 from para_placement.solution import *
+import para_placement.config as config
 
 topo_files = ['./gml_data/Cernet.gml', './gml_data/Geant2012.gml', './gml_data/Internetmci.gml']
 
@@ -89,17 +89,21 @@ def main_single():
 
 @print_run_time
 def main_dc():
-    Configuration.para = True
     topo = topology.data_center_example()
     vnf_set = generate_vnf_set(size=30)
     sfc_size = 100
     model = Model(topo, generate_sfc_list2(topo, vnf_set, sfc_size))
-    model.draw_topo()
+    model.draw_topo(1)
 
-    linear_programming_dc(model)
-    rounding_to_integral(model, rounding_method=rounding_greedy)
+    # Configuration.para = False
+    # linear_programming(model)
+    # rounding_to_integral(model, rounding_method=rounding_one)
+    # model.clear()
 
-    linear_programming_dc(model)
+    Configuration.para = True
+    config.DC_CHOOSING_SERVER = True
+
+    linear_programming(model)
     rounding_to_integral(model, rounding_method=rounding_one)
 
 

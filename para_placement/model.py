@@ -180,7 +180,7 @@ def generate_sfc_list(topo: nx.Graph, vnf_set: List[VNF], size=100, base_idx=0):
         s = random.choice(nodes)
         nodes.remove(s)
         d = random.choice(nodes)
-        ret.append(SFC(vnf_list, latency=random.randint(SFC_CONFIG['LT_LO'], SFC_CONFIG['LT_HI']),
+        ret.append(SFC(vnf_list, latency=random.uniform(SFC_CONFIG['LT_LO'], SFC_CONFIG['LT_HI']),
                        throughput=random.randint(SFC_CONFIG['TP_LO'], SFC_CONFIG['TP_HI']), s=s, d=d,
                        idx=i + base_idx))
     return ret
@@ -198,7 +198,7 @@ def generate_sfc_list2(topo: nx.Graph, vnf_set: List[VNF], size=100, base_idx=0)
         top_switches = [s for s in topo.nodes if 'L1' in s]
         s = random.choice(top_switches)
         d = random.choice(top_switches)
-        ret.append(SFC(vnf_list, latency=random.randint(SFC_CONFIG['LT_LO'], SFC_CONFIG['LT_HI']),
+        ret.append(SFC(vnf_list, latency=random.uniform(SFC_CONFIG['LT_LO'], SFC_CONFIG['LT_HI']),
                        throughput=random.randint(SFC_CONFIG['TP_LO'], SFC_CONFIG['TP_HI']), s=s, d=d,
                        idx=i + base_idx))
     return ret
@@ -389,8 +389,8 @@ def _generate_route_list(topo: nx.Graph, sfc: SFC):
 
 
 # bfs
-def _generate_configurations_for_one_route(topo: nx.Graph, route: List[int], route_latency: int, sfc: SFC, idx: int) \
-        -> List[Configuration]:
+def _generate_configurations_for_one_route(topo: nx.Graph, route: List[int], route_latency: int, sfc: SFC,
+                                           route_idx: int) -> List[Configuration]:
     m = len(sfc.vnf_list)
     n = len(route)
 
@@ -404,22 +404,21 @@ def _generate_configurations_for_one_route(topo: nx.Graph, route: List[int], rou
             placement_set.append(cur)
         else:
             for i in range(cur[-1], n):
-                add = cur[:]
-                add.append(i)
+                new_placement = cur[:]
+                new_placement.append(i)
 
-                # check computing resource capacity
-                index = len(add) - 2
-                node_capacity = topo.nodes.data()[route[add[index + 1]]]['computing_resource']
-                usage = sfc.vnf_list[index].computing_resource
-                while index > 0 and add[index + 1] == add[index]:
-                    index -= 1
-                    usage += sfc.vnf_list[index].computing_resource
+                vnf_index = len(new_placement) - 1 - 1  # first 0 should be ignored
+                node_capacity = topo.nodes[route[i]]['computing_resource']
+                usage = sfc.vnf_list[vnf_index].computing_resource
+                while vnf_index > 0 and new_placement[vnf_index] == new_placement[vnf_index - 1]:
+                    vnf_index -= 1
+                    usage += sfc.vnf_list[vnf_index].computing_resource
                 if usage <= node_capacity:
-                    queue.append(add)
+                    queue.append(new_placement)
 
     configuration_set = []
-    for idx2, placement in enumerate(placement_set):
-        configuration_set.append(Configuration(sfc, route, placement, route_latency, "{}_{}".format(idx, idx2)))
+    for idx, placement in enumerate(placement_set):
+        configuration_set.append(Configuration(sfc, route, placement, route_latency, "{}_{}".format(route_idx, idx)))
     return configuration_set
 
 
@@ -435,4 +434,3 @@ def generate_configurations_for_one_sfc(topo: nx.Graph, sfc: SFC) -> List[Config
         configurations.extend(_generate_configurations_for_one_route(topo, route, latency, sfc, idx))
 
     return configurations
-
