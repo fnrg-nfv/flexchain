@@ -89,20 +89,22 @@ def main_single():
 
 @print_run_time
 def main_dc():
-    Configuration.para = True
     topo = topology.data_center_example()
     vnf_set = generate_vnf_set(size=30)
     sfc_size = 100
     model = Model(topo, generate_sfc_list2(topo, vnf_set, sfc_size))
-    model.draw_topo()
+    model.draw_topo(1)
 
-    linear_programming(model)
-    rounding_to_integral(model, rounding_method=rounding_greedy)
-    model.output_accepted_configuration(filename="greedy_result.txt")
+    # Configuration.para = False
+    # linear_programming(model)
+    # rounding_to_integral(model, rounding_method=rounding_one)
+    # model.clear()
+
+    Configuration.para = True
+    config.DC_CHOOSING_SERVER = True
 
     linear_programming(model)
     rounding_to_integral(model, rounding_method=rounding_one)
-    model.output_accepted_configuration(filename="one_result.txt")
 
 
 if __name__ == '__main__':

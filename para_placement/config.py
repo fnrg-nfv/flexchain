@@ -29,11 +29,11 @@ def topo_cpu(): return random.randint(4000, 8000)
 
 SFC_CONFIG = {
     'VNF_LO': 2,
-    'VNF_HI': 5,
+    'VNF_HI': 6,
 
     # Requirement
     'TP_LO': 50,
-    'TP_HI': 500,
+    'TP_HI': 100,
     # 'LT_LO': 10,
     # 'LT_HI': 30,
     'LT_LO': 1,
@@ -41,8 +41,8 @@ SFC_CONFIG = {
 }
 
 NF_CONFIG = {
-    'CPU_LO': 800,
-    'CPU_HI': 1600,
+    'CPU_LO': 400,
+    'CPU_HI': 800,
     # 'LT_LO': 0.2,
     # 'LT_HI': 2,
     'LT_LO': 0.045,
@@ -51,7 +51,7 @@ NF_CONFIG = {
 
 EPSILON = 0.33
 
-K = 200
+K = 1000
 
 DC = True
 DC_CHOOSING_SERVER = True
