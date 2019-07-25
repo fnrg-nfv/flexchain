@@ -87,11 +87,11 @@ def main_single():
     iteration(model)
 
 
-@print_run_time
 def main_dc():
-    topo = topology.data_center_example()
+    # topo = topology.b_cube_topo(k=2)
+    topo = topology.fat_tree_topo(n=4)
     vnf_set = generate_vnf_set(size=30)
-    sfc_size = 100
+    sfc_size = 300
     model = Model(topo, generate_sfc_list2(topo, vnf_set, sfc_size))
     model.draw_topo(1)
 

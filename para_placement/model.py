@@ -195,7 +195,7 @@ def generate_sfc_list2(topo: nx.Graph, vnf_set: List[VNF], size=100, base_idx=0)
             vnf_list.append(random.choice(vnf_set))
 
         # switches = [s for s in topo.nodes if topo.nodes[s]['computing_resource'] == 0]
-        top_switches = [s for s in topo.nodes if 'L1' in s]
+        top_switches = [s for s in topo.nodes if 'Core' in s or 'L1' in s or 'Layer']
         s = random.choice(top_switches)
         d = random.choice(top_switches)
         ret.append(SFC(vnf_list, latency=random.uniform(SFC_CONFIG['LT_LO'], SFC_CONFIG['LT_HI']),

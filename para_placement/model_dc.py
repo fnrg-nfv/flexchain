@@ -148,7 +148,11 @@ def _generate_configurations_dc_by_server(topo: nx.Graph, sfc: SFC):
 
     route_idx = 0
     for i in range(1, len(sfc.vnf_list) + 1):
+        print(i)
         for server_permutation in itertools.permutations(servers, i):
+            if sum(topo.nodes[server]['computing_resource'] for server in
+                   server_permutation) < sfc.vnf_computing_resources_sum:
+                continue
             server_permutation = list(server_permutation)
             if _route_capacity(topo, server_permutation) > sfc.vnf_computing_resources_sum:
                 route, latency = _permutation_to_route(topo, [sfc.s, *server_permutation, sfc.d])
@@ -177,6 +181,8 @@ def _generate_configurations_for_one_route_dc(topo: nx.Graph, route: List[int], 
 
     placement_set = []
     queue = [[0]]
+    if topo.nodes[route[server_pos_list[0]]]['computing_resource'] < sfc.vnf_list[0].computing_resource:
+        return []
 
     while queue:
         cur_placement = queue.pop(0)
