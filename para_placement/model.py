@@ -195,9 +195,9 @@ def generate_sfc_list2(topo: nx.Graph, vnf_set: List[VNF], size=100, base_idx=0)
             vnf_list.append(random.choice(vnf_set))
 
         # switches = [s for s in topo.nodes if topo.nodes[s]['computing_resource'] == 0]
-        switches = [s for s in topo.nodes if 'L1' in s]
-        s = random.choice(switches)
-        d = random.choice(switches)
+        top_switches = [s for s in topo.nodes if 'L1' in s]
+        s = random.choice(top_switches)
+        d = random.choice(top_switches)
         ret.append(SFC(vnf_list, latency=random.randint(SFC_CONFIG['LT_LO'], SFC_CONFIG['LT_HI']),
                        throughput=random.randint(SFC_CONFIG['TP_LO'], SFC_CONFIG['TP_HI']), s=s, d=d,
                        idx=i + base_idx))
@@ -350,7 +350,7 @@ def _dijkstra(topo: nx.Graph, s) -> {}:
     return ret
 
 
-# dfs + latency constraint (+ dijkstra)
+# dfs + latency constraint (+ dijkstra) todo bfs may be better
 def _generate_route_list(topo: nx.Graph, sfc: SFC):
     s = sfc.s
     d = sfc.d
@@ -429,10 +429,10 @@ def generate_configurations_for_one_sfc(topo: nx.Graph, sfc: SFC) -> List[Config
 
     print(" ... Size of route_list: {}".format(len(route_list)), end="")
 
-    configuration_list = []
+    configurations = []
     for idx, item in enumerate(route_list):
         route, latency = item
-        configuration_list.extend(_generate_configurations_for_one_route(topo, route, latency, sfc, idx))
+        configurations.extend(_generate_configurations_for_one_route(topo, route, latency, sfc, idx))
 
-    return configuration_list
+    return configurations
 

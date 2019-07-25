@@ -41,5 +41,7 @@ NF_CONFIG = {
 
 EPSILON = 0.33
 
+K = 20
+
 if __name__ == '__main__':
     print(TOPO_CONFIG2.latency())

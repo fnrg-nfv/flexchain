@@ -5,6 +5,8 @@ from para_placement.evaluation import *
 from para_placement.model import *
 import copy
 
+from para_placement.model_dc import generate_configurations_dc, linear_programming_dc
+
 
 def linear_programming(model: Model) -> (float, int, float):
     print("\n>>> Start LP <<<")
@@ -20,10 +22,10 @@ def linear_programming(model: Model) -> (float, int, float):
         for configuration in sfc.configurations:
             configuration.var = LpVariable(configuration.name, 0, 1, LpContinuous)
 
-    print("\nVar sum: {}".format(sum(len(sfc.configurations) for sfc in model.sfc_list)))
-
     # total number of valid sfc
-    print("\nValid sfc: {}".format(sum(len(s.configurations) > 0 for s in model.sfc_list)))
+    print()
+    print("Number of LP Variables: {}".format(sum(len(sfc.configurations) for sfc in model.sfc_list)))
+    print("Valid sfc: {}".format(sum(len(s.configurations) > 0 for s in model.sfc_list)))
 
     print(">> Objective function init...")
     # Objective function
@@ -146,7 +148,7 @@ def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (floa
             info['bandwidth'] -= sum(sfc.throughput
                                      for sfc in accepted_sfc_list
                                      if (start, end) in sfc.accepted_configuration.edges)
-        linear_programming(model2)
+        linear_programming_dc(model2)
         rounding_to_integral(model2, rounding_method)
 
     obj_val = objective_value(model, EPSILON)
