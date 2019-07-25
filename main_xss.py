@@ -24,7 +24,7 @@ def main():
     # vnf_list = generate_vnf_list()
     # for item in vnf_list:
     #     print(item)
-    topo = Bcube_topo(n=4, k=3)
+    topo = fat_tree_topo()
     # topo = Bcube_topo()
     nx.draw(topo, with_labels=True)
     plt.show()

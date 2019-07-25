@@ -140,7 +140,7 @@ def Bcube_topo(k=0, n=4):
     num_of_servers = n ** (k+1)
     # add server first
     for i in range(num_of_servers):
-        topo.add_node("Server " + str(i), computing_resource=TOPO_CONFIG2.cpu())
+        topo.add_node("Server {}".format(i), computing_resource=TOPO_CONFIG2.cpu())
 
     # add switch by layer
     num_of_switches = int(num_of_servers / n)
@@ -148,12 +148,50 @@ def Bcube_topo(k=0, n=4):
         index_interval = n ** i
         num_of_one_group_switches = n ** i
         for j in range(num_of_switches):
-            topo.add_node("Layer " + str(i) + "Switch " + str(j), computing_resource=0)
+            topo.add_node("Layer {} Switch {}".format(i,j), computing_resource=0)
             start_index_server = j % num_of_one_group_switches + (j // num_of_one_group_switches) * num_of_one_group_switches * n
             for k in range(n):
                 server_index = start_index_server + k * index_interval
-                topo.add_edge("Server " + str(server_index), "Layer " + str(i) + "Switch " + str(j), bandwidth=1000, latency=TOPO_CONFIG2.latency())
+                topo.add_edge("Server {}".format(server_index), "Layer {} Switch {}".format(i, j), bandwidth=1000, latency=TOPO_CONFIG2.latency())
 
     topo.name = 'Bcube'
+
+    return topo
+
+def fat_tree_topo(n=4):
+    """Standard fat tree topology
+    n: number of pods
+    total n^3/4 servers
+    """
+    topo = nx.Graph()
+    num_of_servers_per_edge_switch = n // 2
+    num_of_edge_switches = n // 2
+    num_of_aggregation_switches = num_of_edge_switches
+    num_of_core_switches = int((n / 2) * (n / 2))
+
+    # generate topo pod by pod
+    for i in range(n):
+        for j in range(num_of_edge_switches):
+            topo.add_node("Pod {} edge switch {}".format(i, j), computing_resource=0)
+            topo.add_node("Pod {} aggregation switch {}".format(i, j), computing_resource=0)
+            for k in range(num_of_servers_per_edge_switch):
+                topo.add_node("Pod {} edge switch {} server {}".format(i, j, k), computing_resource=TOPO_CONFIG2.cpu())
+                topo.add_edge("Pod {} edge switch {}".format(i, j), "Pod {} edge switch {} server {}".format(i, j, k), bandwidth=1000, latency=TOPO_CONFIG2.latency())
+
+    # add edge among edge and aggregation switch within pod
+    for i in range(n):
+        for j in range(num_of_aggregation_switches):
+            for k in range(num_of_edge_switches):
+                topo.add_edge("Pod {} aggregation switch {}".format(i, j), "Pod {} edge switch {}".format(i, k), bandwidth=1000, latency=TOPO_CONFIG2.latency())
+
+    # add edge among core and aggregation switch
+    num_of_core_switches_connected_to_same_aggregation_switch = num_of_core_switches // num_of_aggregation_switches
+    for i in range(num_of_core_switches):
+        topo.add_node("Core switch {}".format(i), computing_resource=0)
+        aggregation_switch_index_in_pod = i // num_of_core_switches_connected_to_same_aggregation_switch
+        for j in range(n):
+            topo.add_edge("Core switch {}".format(i), "Pod {} aggregation switch {}".format(j, aggregation_switch_index_in_pod), bandwidth=1000, latency=TOPO_CONFIG2.latency())
+
+    topo.name = 'Fat-Tree'
 
     return topo
