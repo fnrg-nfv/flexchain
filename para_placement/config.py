@@ -17,6 +17,16 @@ TOPO_CONFIG2.latency = lambda: 0.05
 TOPO_CONFIG2.bandwidth = lambda: random.randint(500, 5000)
 TOPO_CONFIG2.cpu = lambda: random.randint(4000, 8000)
 
+
+def topo_latency(): return 0.05
+
+
+def topo_bandwidth(): return random.randint(500, 5000)
+
+
+def topo_cpu(): return random.randint(4000, 8000)
+
+
 SFC_CONFIG = {
     'VNF_LO': 2,
     'VNF_HI': 5,
@@ -41,7 +51,10 @@ NF_CONFIG = {
 
 EPSILON = 0.33
 
-K = 20
+K = 200
+
+DC = True
+DC_CHOOSING_SERVER = True
 
 if __name__ == '__main__':
     print(TOPO_CONFIG2.latency())

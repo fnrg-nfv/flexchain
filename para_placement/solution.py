@@ -1,11 +1,11 @@
-from pulp import *
-
-from para_placement.config import EPSILON
-from para_placement.evaluation import *
-from para_placement.model import *
 import copy
 
-from para_placement.model_dc import generate_configurations_dc, linear_programming_dc
+from pulp import *
+
+from para_placement.config import EPSILON, DC
+from para_placement.evaluation import *
+from para_placement.model import *
+from para_placement.model_dc import generate_configurations_dc
 
 
 def linear_programming(model: Model) -> (float, int, float):
@@ -14,8 +14,12 @@ def linear_programming(model: Model) -> (float, int, float):
 
     print(">> Variables init...")
     for idx, sfc in enumerate(model.sfc_list):
-        sfc.configurations = generate_configurations_for_one_sfc(model.topo, sfc)
-        print("\r>> You have generated {}/{} configuration sets".format(idx + 1, len(model.sfc_list)), end='')
+        if DC:
+            sfc.configurations = generate_configurations_dc(model.topo, sfc)
+        else:
+            sfc.configurations = generate_configurations_for_one_sfc(model.topo, sfc)
+        print("\r>> You have generated {}/{} configuration sets (last size:{})".format(idx + 1, len(model.sfc_list),
+                                                                                       len(sfc.configurations)), end='')
         # filter configurations whose latency is legal. IMPORTANT
         sfc.configurations = list(filter(lambda c: c.get_latency() <= sfc.latency, sfc.configurations))
 
@@ -148,7 +152,7 @@ def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (floa
             info['bandwidth'] -= sum(sfc.throughput
                                      for sfc in accepted_sfc_list
                                      if (start, end) in sfc.accepted_configuration.edges)
-        linear_programming_dc(model2)
+        linear_programming(model2)
         rounding_to_integral(model2, rounding_method)
 
     obj_val = objective_value(model, EPSILON)
