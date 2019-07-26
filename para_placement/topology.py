@@ -8,7 +8,6 @@ import networkx as nx
 
 from para_placement.config import TOPO_CONFIG, TOPO_CONFIG2
 from para_placement.helper import extract_str
-from para_placement.model import Model
 
 warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 fig, ax = plt.subplots()
