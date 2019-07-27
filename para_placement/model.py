@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 from para_placement.config import NF_CONFIG, SFC_CONFIG
+from para_placement.helper import pairwise
 
 
 class BaseObject(object):
@@ -195,7 +196,7 @@ def generate_sfc_list2(topo: nx.Graph, vnf_set: List[VNF], size=100, base_idx=0)
             vnf_list.append(random.choice(vnf_set))
 
         # switches = [s for s in topo.nodes if topo.nodes[s]['computing_resource'] == 0]
-        top_switches = [s for s in topo.nodes if 'Core' in s or 'L1' in s or 'Layer']
+        top_switches = [s for s in topo.nodes if 'Core' in s or 'L1' in s or 'Layer 1' in s or 'Intermediate' in s]
         s = random.choice(top_switches)
         d = random.choice(top_switches)
         ret.append(SFC(vnf_list, latency=random.uniform(SFC_CONFIG['LT_LO'], SFC_CONFIG['LT_HI']),
@@ -205,7 +206,7 @@ def generate_sfc_list2(topo: nx.Graph, vnf_set: List[VNF], size=100, base_idx=0)
 
 
 class Configuration(BaseObject):
-    def __init__(self, sfc: SFC, route: List[int], place: List[int], route_latency: int, idx: string):
+    def __init__(self, sfc: SFC, route: List[int], place: {}, route_latency: int, idx: string):
         self.sfc = sfc
         self.route = route
         self.place = place
@@ -222,12 +223,12 @@ class Configuration(BaseObject):
 
         # throughput
         self.edges = {}
-        for i in range(len(route) - 1):
-            start = max(route[i], route[i + 1])
-            end = min(route[i], route[i + 1])
-            if (start, end) not in self.edges:
-                self.edges[(start, end)] = 0
-            self.edges[(start, end)] = 1
+        for n1, n2 in pairwise(route):
+            if (n1, n2) not in self.edges:
+                self.edges[(n1, n2)] = 0
+                self.edges[(n2, n1)] = 0
+            self.edges[(n1, n2)] += 1
+            self.edges[(n2, n1)] += 1
 
         self.l = 9999999  # used to find optimal situation
 

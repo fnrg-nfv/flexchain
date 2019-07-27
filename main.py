@@ -11,33 +11,33 @@ topo_files = ['./gml_data/Cernet.gml', './gml_data/Geant2012.gml', './gml_data/I
 def main():
     # parameter init
     Configuration.para = True
-    gml_filename = topo_files[0]
+    config.DC_CHOOSING_SERVER = False
 
     # model init
-    topo = topology.parse_gml(gml_filename)
+    # topo = topology.fat_tree_topo(n=5)
+    topo = topology.b_cube_topo(k=2)
+    # topo = topology.vl2_topo(port_num_of_aggregation_switch=6, port_num_of_tor_for_server=4)
     vnf_set = generate_vnf_set(size=50)
     model = Model(topo, [])
 
     model.draw_topo()
 
     iter_times = 10
-    unit = 50
+    unit = 40
     result = {}
     temple_files = []
 
     for i in range(iter_times):
-        model.clear()
-        model.sfc_list.extend(generate_sfc_list(topo=topo, vnf_set=vnf_set, size=unit, base_idx=i * unit))
         size = unit * i + unit
+        model = Model(topo, generate_sfc_list(topo=topo, vnf_set=vnf_set, size=size, base_idx=0))
         result[size] = iteration(model)
-        temple_files.append("result_{}_{}_{}.pkl".format(extract_str(gml_filename), size, current_time()))
+        temple_files.append("result_{}_{}_{}.pkl".format(model.topo.name, size, current_time()))
         save_obj(result[size], temple_files[-1])
 
-    filename = "result_{}_{}.pkl".format(extract_str(gml_filename), current_time())
-    print(filename)
+    filename = "result_{}_{}.pkl".format(model.topo.name, current_time())
     save_obj(result, filename)
 
-    draw_plot(result, "result_{}_{}".format(extract_str(gml_filename), current_time()))
+    draw_plot(result, "result_{}_{}".format(model.topo.name, current_time()))
 
     for temple_file in temple_files:
         os.remove(temple_file)
@@ -49,7 +49,7 @@ def iteration(model: Model):
     ret = dict()
 
     model.clear()
-    ret['greedy'] = greedy(model)
+    ret['greedy'] = greedy_dc(model)
 
     # model.clear()
     # ret['greedy 2'] = greedy2(model)
@@ -61,7 +61,7 @@ def iteration(model: Model):
     # ret['ILP greedy'] = rounding_to_integral(model, rounding_method=rounding_greedy)
     #
     # model = Model.load(filename)
-    ret['ILP one'] = rounding_to_integral(model, rounding_method=rounding_one)
+    ret['heuristic'] = rounding_to_integral(model, rounding_method=rounding_one)
     # os.remove(filename)
 
     print("\n>>>>>>>>>>>>>>>>>> Result Summary <<<<<<<<<<<<<<<<<<")
@@ -72,40 +72,45 @@ def iteration(model: Model):
     return ret
 
 
-def main_single():
-    filename = topo_files[1]
+def main_dc():
+    topo = topology.fat_tree_topo(n=5)
+    # topo = topology.b_cube_topo(k=2)
+    # topo = topology.vl2_topo(port_num_of_aggregation_switch=6, port_num_of_tor_for_server=4)
 
-    # model init
-    topo = topology.parse_gml(filename)
     vnf_set = generate_vnf_set(size=30)
     sfc_size = 100
-    model = Model(topo, generate_sfc_list(topo, vnf_set, sfc_size))
-    model.draw_topo(level=1)
-
-    iteration(model)
-    Configuration.para = True
-    iteration(model)
-
-
-def main_dc():
-    # topo = topology.b_cube_topo(k=2)
-    topo = topology.fat_tree_topo(n=4)
-    vnf_set = generate_vnf_set(size=30)
-    sfc_size = 300
     model = Model(topo, generate_sfc_list2(topo, vnf_set, sfc_size))
     model.draw_topo(1)
 
-    # Configuration.para = False
+    Configuration.para = True
+    config.DC_CHOOSING_SERVER = False
+
+    iteration(model)
     # linear_programming(model)
     # rounding_to_integral(model, rounding_method=rounding_one)
+    #
     # model.clear()
 
-    Configuration.para = True
-    config.DC_CHOOSING_SERVER = True
 
-    linear_programming(model)
-    rounding_to_integral(model, rounding_method=rounding_one)
+def add(t1, t2):
+    if type(t1) is not type(t2):
+        return None
+
+    if type(t1) is dict:
+        ret = dict()
+        for key in t1:
+            ret[key] = add(t1[key], t2[key])
+        return ret
+
+    if type(t1) is tuple:
+        length = min(len(t1), len(t2))
+        ret = []
+        for i in range(length):
+            ret.append(add(t1[i], t2[i]))
+        return tuple(ret)
+
+    return t1 + t2
 
 
 if __name__ == '__main__':
-    main_dc()
+    main()
