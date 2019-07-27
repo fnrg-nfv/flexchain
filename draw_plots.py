@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 
 
 def main():
-    file_name = 'result2.pkl'
-    with open(file_name, 'rb') as _input:
+    filename = 'result_Bcube_07_27_13_00_47.pkl'
+    with open(filename, 'rb') as _input:
         result = pickle.load(_input)
         _input.close()
 
@@ -14,10 +14,10 @@ def main():
         for key2 in result[key]:
             print(key, key2, result[key][key2][0])
 
-    draw_plot(result)
+    draw_plot(result, title='Bcube')
 
 
-def draw_plot(result, save_file_name=''):
+def draw_plot(result, title='Line Plot Demo', save_file_name=''):
     x = [key for key in result]  # number of sfc requests
     index = 0  # objective value
 
@@ -41,7 +41,7 @@ def draw_plot(result, save_file_name=''):
     plt.ylabel("Objective Value")
 
     # 图表的标题
-    plt.title("Carnet")
+    plt.title(title)
 
     # Y轴的范围
     # plt.ylim(-1.2, 1.2)
