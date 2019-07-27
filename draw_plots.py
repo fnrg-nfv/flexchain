@@ -3,18 +3,32 @@ from itertools import cycle
 
 import matplotlib.pyplot as plt
 
+from para_placement.helper import add_recursively
+
 
 def main():
-    filename = 'result_Bcube_07_27_13_00_47.pkl'
+    filename = 'result_Bcube_07_27_20_10_53.pkl'
     with open(filename, 'rb') as _input:
         result = pickle.load(_input)
         _input.close()
+    print(result)
 
+    new_result = dict()
     for key in result:
-        for key2 in result[key]:
-            print(key, key2, result[key][key2][0])
+        item_sum = None
+        length = len(result[key])
+        for item in result[key]:
+            item_sum = add_recursively(item_sum, item)
+        item_average = dict()
+        for key2 in item_sum:
+            ret = []
+            for i in range(len(item_sum)):
+                ret.append(item_sum[key2][i] / length)
+            item_average[key2] = tuple(ret)
+        print(key, item_average)
+        new_result[key] = item_sum
 
-    draw_plot(result, title='Bcube')
+    draw_plot(new_result, title='', save_file_name="b_cube")
 
 
 def draw_plot(result, title='Line Plot Demo', save_file_name=''):
@@ -30,9 +44,12 @@ def draw_plot(result, title='Line Plot Demo', save_file_name=''):
             data[legend].append(result[size][legend][index])
 
     cycol = cycle('bgrcmk')
+    marker_it = iter(['x', '', '*'])
+    linestyle_it = iter(['dotted', 'solid', 'dashed'])
 
     for legend in data:
-        plt.plot(x, data[legend], label=legend, color=next(cycol), linewidth=1)
+        plt.plot(x, data[legend], marker=next(marker_it), label=legend, color=next(cycol), linewidth=2,
+                 linestyle=next(linestyle_it))
 
     # X轴的文字
     plt.xlabel("Number of SFC Requests")

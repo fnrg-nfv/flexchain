@@ -1,10 +1,9 @@
 #!/usr/bin/python3
-from draw_plots import draw_plot
+import winsound
+
 from para_placement import topology
 from para_placement.helper import *
 from para_placement.solution import *
-import para_placement.config as config
-import winsound
 
 topo_files = ['./gml_data/Cernet.gml', './gml_data/Geant2012.gml', './gml_data/Internetmci.gml']
 
@@ -15,8 +14,8 @@ def main():
     config.DC_CHOOSING_SERVER = False
 
     # model init
-    # topo = topology.fat_tree_topo(n=5)
-    topo = topology.b_cube_topo(k=2)
+    topo = topology.fat_tree_topo(n=6)
+    # topo = topology.b_cube_topo(k=2)
     # topo = topology.vl2_topo(port_num_of_aggregation_switch=6, port_num_of_tor_for_server=4)
     vnf_set = generate_vnf_set(size=50)
     model = Model(topo, [])
@@ -31,12 +30,17 @@ def main():
 
     for i in range(iter_times):
         size = unit * i + unit
-        result[size] = []
-        for _ in range(dup_times):
-            model = Model(topo, generate_sfc_list(topo=topo, vnf_set=vnf_set, size=size, base_idx=0))
-            result[size].append(iteration(model))
-            temple_files.append("result_{}_{}_{}.pkl".format(model.topo.name, size, current_time()))
-            save_obj(result[size], temple_files[-1])
+        # result[size] = []
+        # for _ in range(dup_times):
+        #     model = Model(topo, generate_sfc_list(topo=topo, vnf_set=vnf_set, size=size, base_idx=0))
+        #     cur_result = iteration(model)
+        #     temple_files.append("result_{}_{}_{}.pkl".format(model.topo.name, size, current_time()))
+        #     save_obj(cur_result, temple_files[-1])
+        #     result[size].append(cur_result)
+        model = Model(topo, generate_sfc_list(topo=topo, vnf_set=vnf_set, size=size, base_idx=0))
+        result[size] = iteration(model)
+        temple_files.append("result_{}_{}_{}.pkl".format(model.topo.name, size, current_time()))
+        save_obj(result[size], temple_files[-1])
 
     filename = "result_{}_{}.pkl".format(model.topo.name, current_time())
     save_obj(result, filename)
@@ -77,42 +81,31 @@ def iteration(model: Model):
 
 
 def main_dc():
-    # topo = topology.fat_tree_topo(n=5)
+    # topo = topology.fat_tree_topo(n=6)
     # topo = topology.b_cube_topo(k=2)
     topo = topology.vl2_topo(port_num_of_aggregation_switch=6, port_num_of_tor_for_server=4)
 
     vnf_set = generate_vnf_set(size=30)
-    sfc_size = 120
+    sfc_size = 400
     model = Model(topo, generate_sfc_list2(topo, vnf_set, sfc_size))
-    model.draw_topo(1)
+    model.draw_topo()
 
     Configuration.para = True
     config.DC_CHOOSING_SERVER = False
 
     result = iteration(model)
+
+    # greedy_dc(model)
+    # config.GREEDY_DFS = False
+    # model.clear()
+    # greedy_dc(model)
+    # model.clear()
+    # linear_programming(model)
+    # rounding_to_integral(model, rounding_method=rounding_one)
+    # model.print_resource_usages()
+
     filename = "result_{}_{}_{}.pkl".format(model.topo.name, sfc_size, current_time())
-
     save_obj(result, filename)
-
-
-def add(t1, t2):
-    if type(t1) is not type(t2):
-        return None
-
-    if type(t1) is dict:
-        ret = dict()
-        for key in t1:
-            ret[key] = add(t1[key], t2[key])
-        return ret
-
-    if type(t1) is tuple:
-        length = min(len(t1), len(t2))
-        ret = []
-        for i in range(length):
-            ret.append(add(t1[i], t2[i]))
-        return tuple(ret)
-
-    return t1 + t2
 
 
 def alert(duration=1000, freq=440):
@@ -120,5 +113,5 @@ def alert(duration=1000, freq=440):
 
 
 if __name__ == '__main__':
-    main_dc()
+    main()
     alert()

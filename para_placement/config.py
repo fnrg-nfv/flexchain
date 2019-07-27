@@ -20,8 +20,8 @@ SFC_CONFIG = {
     'VNF_HI': 6,
 
     # Requirement
-    'TP_LO': 50,
-    'TP_HI': 100,
+    'TP_LO': 10,
+    'TP_HI': 50,
     'LT_LO': 1,
     'LT_HI': 4,
 }
@@ -39,3 +39,5 @@ K = 600
 
 DC = True
 DC_CHOOSING_SERVER = True
+
+GREEDY_DFS = True

@@ -2,11 +2,12 @@ import copy
 
 from pulp import *
 
+import para_placement.config as config
 from para_placement.config import EPSILON, DC
 from para_placement.evaluation import *
 from para_placement.model import *
-from para_placement.model_dc import generate_configurations_dc, generate_configuration_greedy_dc
-import para_placement.config as config
+from para_placement.model_dc import generate_configurations_dc, generate_configuration_greedy_dc_dfs, \
+    generate_configuration_greedy_dc
 
 
 def linear_programming(model: Model) -> (float, int, float):
@@ -274,7 +275,10 @@ def greedy_dc(model: Model) -> (float, int, float):
     sfcs.sort(key=lambda x: x.vnf_computing_resources_sum)
 
     for idx, sfc in enumerate(sfcs):
-        configuration = generate_configuration_greedy_dc(topo, sfc)
+        if config.GREEDY_DFS:
+            configuration = generate_configuration_greedy_dc_dfs(topo, sfc)
+        else:
+            configuration = generate_configuration_greedy_dc(topo, sfc)
         if configuration and is_configuration_valid(topo, sfc, configuration):
             sfc.accepted_configuration = configuration
         print("\r>> You have finished {}/{} sfcs' placements".format(idx + 1, len(sfcs)), end='')
