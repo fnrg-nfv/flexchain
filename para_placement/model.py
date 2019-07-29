@@ -7,6 +7,7 @@ from typing import List
 import matplotlib.pyplot as plt
 import networkx as nx
 
+import para_placement.config as config
 from para_placement.config import NF_CONFIG, SFC_CONFIG
 from para_placement.helper import pairwise
 
@@ -90,17 +91,21 @@ class Model(BaseObject):
         self.sfc_list = sfc_list
 
     def __str__(self):
-        return "<{}>\tnodes:{}\tedges:{}\tSFCs:{}".format(self.topo.name, len(self.topo.nodes), len(self.topo.edges),
-                                                          len(self.sfc_list))
+        return "<{}>\tPara: {}\tOne M: {}\tnodes: {}\tedges: {}\tSFCs: {}".format(self.topo.name,
+                                                                                  Configuration.para,
+                                                                                  config.ONE_MACHINE,
+                                                                                  len(self.topo.nodes),
+                                                                                  len(self.topo.edges),
+                                                                                  len(self.sfc_list))
 
-    def save(self, file_name='model_data.pkl'):
-        with open(file_name, 'wb') as output:
+    def save(self, filename='model_data.pkl'):
+        with open(filename, 'wb') as output:
             pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
             output.close()
 
     @staticmethod
-    def load(file_name='model_data.pkl'):
-        with open(file_name, 'rb') as input_file:
+    def load(filename='model_data.pkl'):
+        with open(filename, 'rb') as input_file:
             model = pickle.load(input_file)
             input_file.close()
             return model
@@ -143,26 +148,32 @@ class Model(BaseObject):
             sfc.configurations = []
 
     def print_resource_usages(self):
-        nodes = dict()
-        edges = dict()
-        for sfc in self.get_accepted_sfc_list():
-            for key in sfc.accepted_configuration.computing_resource:
-                if key not in nodes:
-                    nodes[key] = 0
-                nodes[key] += sfc.accepted_configuration.computing_resource[key]
-        for sfc in self.get_accepted_sfc_list():
-            for key in sfc.accepted_configuration.edges:
-                if key not in edges:
-                    edges[key] = 0
-                edges[key] += sfc.accepted_configuration.edges[key] * sfc.throughput
+        accepted_sfc_list = self.get_accepted_sfc_list()
 
-        for key in nodes:
-            print(key, "{}/{}".format(nodes[key], self.topo.nodes[key]['computing_resource']),
-                  "{:.2f}%".format(nodes[key] / self.topo.nodes[key]['computing_resource'] * 100))
+        for node in self.topo.nodes:
+            if self.topo.nodes[node]['computing_resource'] <= 0:
+                continue
+            consumption = 0
+            for sfc in accepted_sfc_list:
+                if node in sfc.accepted_configuration.computing_resource:
+                    consumption += sfc.accepted_configuration.computing_resource[node]
+            print(node, "{}/{}".format(consumption, self.topo.nodes[node]['computing_resource']),
+                  "{:.2f}%".format(consumption / self.topo.nodes[node]['computing_resource'] * 100))
 
-        for key in edges:
-            print(key, "{}/{}".format(edges[key], self.topo.edges.get(key)['bandwidth']),
-                  "{:.2f}%".format(edges[key] / self.topo.edges.get(key)['bandwidth'] * 100))
+        for start, end, info in self.topo.edges.data():
+            consumption = 0
+            edge = (start, end)
+            for sfc in accepted_sfc_list:
+                if edge in sfc.accepted_configuration.edges:
+                    consumption += sfc.accepted_configuration.edges[edge] * sfc.throughput
+            print(edge, "{}/{}".format(consumption, self.topo.edges.get(edge)['bandwidth']),
+                  "{:.2f}%".format(consumption / self.topo.edges.get(edge)['bandwidth'] * 100))
+
+    def compute_resource_utilization(self):
+        accepted_sfc_list = self.get_accepted_sfc_list()
+        usage = sum(sfc.vnf_computing_resources_sum for sfc in accepted_sfc_list)
+        capacity = sum(self.topo.nodes[node]['computing_resource'] for node in self.topo.nodes)
+        return usage / capacity
 
 
 def generate_vnf_set(size: int = 30) -> List[VNF]:

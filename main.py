@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-import winsound
 
 from para_placement import topology
 from para_placement.helper import *
@@ -63,6 +62,7 @@ def iteration(model: Model):
     # ret['greedy 2'] = greedy2(model)
 
     model.clear()
+    config.K = 600
     ret['optimal'] = linear_programming(model)
     # filename = "solved_model_{}.pkl".format(uuid.uuid4())
     # model.save(filename)
@@ -73,7 +73,7 @@ def iteration(model: Model):
     # os.remove(filename)
 
     print("\n>>>>>>>>>>>>>>>>>> Result Summary <<<<<<<<<<<<<<<<<<")
-    print("Para: {}\t{}\n".format(Configuration.para, model))
+    print("{}\n".format(model))
     for key in ret:
         print("{}: {}".format(key, ret[key]))
 
@@ -81,9 +81,9 @@ def iteration(model: Model):
 
 
 def main_dc():
-    # topo = topology.fat_tree_topo(n=6)
+    topo = topology.fat_tree_topo(n=6)
     # topo = topology.b_cube_topo(k=2)
-    topo = topology.vl2_topo(port_num_of_aggregation_switch=6, port_num_of_tor_for_server=4)
+    # topo = topology.vl2_topo(port_num_of_aggregation_switch=6, port_num_of_tor_for_server=4)
 
     vnf_set = generate_vnf_set(size=30)
     sfc_size = 400
@@ -108,10 +108,39 @@ def main_dc():
     save_obj(result, filename)
 
 
-def alert(duration=1000, freq=440):
-    winsound.Beep(freq, duration)
+def main_compare():
+    # parameter init
+    config.DC_CHOOSING_SERVER = False
+
+    # model init
+    topo = topology.b_cube_topo(k=2)
+    vnf_set = generate_vnf_set(size=30)
+    sizes = [40, 80, 120, 160, 200]
+
+    result = dict()
+
+    for size in sizes:
+        model = Model(topo, generate_sfc_list(topo, vnf_set, size, 0))
+        model.draw_topo()
+        result[size] = dict()
+
+        Configuration.para = True
+        config.ONE_MACHINE = False
+        result[size]['normal'] = iteration(model)
+        Configuration.para = False
+        config.ONE_MACHINE = False
+        result[size]['unpara'] = iteration(model)
+        Configuration.para = True
+        config.ONE_MACHINE = True
+        result[size]['one'] = iteration(model)
+
+        filename = "compare_result_{}_{}_{}.pkl".format(model.topo.name, size, current_time())
+        save_obj(result[size], filename)
+
+    filename = "compare_result_{}_{}.pkl".format(topo.name, current_time())
+    save_obj(result, filename)
 
 
 if __name__ == '__main__':
-    main()
+    main_compare()
     alert()

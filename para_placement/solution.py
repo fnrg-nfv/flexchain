@@ -10,7 +10,7 @@ from para_placement.model_dc import generate_configurations_dc, generate_configu
     generate_configuration_greedy_dc
 
 
-def linear_programming(model: Model) -> (float, int, float):
+def linear_programming(model: Model) -> (float, int, float, float):
     print("\n>>> Start LP <<<")
     problem = LpProblem("VNF Placement", LpMaximize)
 
@@ -22,8 +22,9 @@ def linear_programming(model: Model) -> (float, int, float):
         else:
             sfc.configurations = generate_configurations_for_one_sfc(model.topo, sfc)
 
-        print("\r>> You have generated {}/{} configuration sets (last size: {}({}))"
-              .format(idx + 1, len(model.sfc_list), len(sfc.configurations), len(sfc.vnf_list)), end='')
+        print("\r>> You have generated {}/{} configuration sets (last size: {}({},{}))"
+              .format(idx + 1, len(model.sfc_list), len(sfc.configurations), len(sfc.vnf_list),
+                      sfc.vnf_computing_resources_sum), end='')
         # filter configurations whose latency is legal. IMPORTANT
         sfc.configurations = list(filter(lambda c: c.get_latency() <= sfc.latency, sfc.configurations))
 
@@ -82,7 +83,7 @@ def linear_programming(model: Model) -> (float, int, float):
             sfc.configurations) / accept_sfc_number
     print("Objective Value: {}({}, {}ms)".format(obj_val, accept_sfc_number, latency))
 
-    return obj_val, accept_sfc_number, latency
+    return obj_val, accept_sfc_number, latency, model.compute_resource_utilization()
 
 
 def rounding_one(model: Model):
@@ -136,7 +137,7 @@ def rounding_greedy(model: Model):
                 sfc.accepted_configuration = None
 
 
-def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (float, int):
+def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (float, int, float, float):
     print("\n>>> Start Rounding <<<")
 
     rounding_method(model)
@@ -154,10 +155,12 @@ def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (floa
         info['bandwidth'] -= sum(sfc.throughput * sfc.accepted_configuration.edges[(start, end)]
                                  for sfc in accepted_sfc_list
                                  if (start, end) in sfc.accepted_configuration.edges)
-    if accepted_sfc_list:
+
+    if len(accepted_sfc_list) > 1:
         linear_programming(sub_model)
         rounding_to_integral(sub_model, rounding_method)
     else:
+        model.clear()
         greedy_dc(model)
 
     obj_val = objective_value(model, EPSILON)
@@ -165,7 +168,7 @@ def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (floa
     latency = average_latency(model)
     print("Objective Value: {} ({}, {}, {})".format(obj_val, evaluate(model), accept_sfc_number, latency))
 
-    return obj_val, accept_sfc_number, latency
+    return obj_val, accept_sfc_number, latency, model.compute_resource_utilization()
 
 
 # Greedy
@@ -260,7 +263,7 @@ def greedy2(model: Model) -> (float, int, float):
     return obj_val, accept_sfc_number, latency
 
 
-def greedy_dc(model: Model) -> (float, int, float):
+def greedy_dc(model: Model) -> (float, int, float, float):
     """
     Greedy thought:
         Sort sfcs by its computing resources consumption in the increasing order
@@ -275,10 +278,10 @@ def greedy_dc(model: Model) -> (float, int, float):
     sfcs.sort(key=lambda x: x.vnf_computing_resources_sum)
 
     for idx, sfc in enumerate(sfcs):
-        if config.GREEDY_DFS:
-            configuration = generate_configuration_greedy_dc_dfs(topo, sfc)
-        else:
-            configuration = generate_configuration_greedy_dc(topo, sfc)
+        # if config.GREEDY_DFS:
+        configuration = generate_configuration_greedy_dc_dfs(topo, sfc)
+        # else:
+        # configuration = generate_configuration_greedy_dc(topo, sfc)
         if configuration and is_configuration_valid(topo, sfc, configuration):
             sfc.accepted_configuration = configuration
         print("\r>> You have finished {}/{} sfcs' placements".format(idx + 1, len(sfcs)), end='')
@@ -287,7 +290,7 @@ def greedy_dc(model: Model) -> (float, int, float):
     accept_sfc_number = len(model.get_accepted_sfc_list())
     latency = average_latency(model)
     print("\nObjective Value: {} ({}, {}, {})".format(obj_val, evaluate(model), accept_sfc_number, latency))
-    return obj_val, accept_sfc_number, latency
+    return obj_val, accept_sfc_number, latency, model.compute_resource_utilization()
 
 
 # genetic algorithm (not necessary)

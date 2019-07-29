@@ -2,6 +2,7 @@ import datetime
 import pickle
 import string
 import time
+import winsound
 from itertools import tee
 
 
@@ -67,3 +68,7 @@ def add_recursively(t1, t2):
         return ret
 
     return t1 + t2
+
+
+def alert(duration=1000, freq=440):
+    winsound.Beep(freq, duration)
