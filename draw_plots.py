@@ -5,32 +5,53 @@ from itertools import cycle
 
 import matplotlib.pyplot as plt
 
-from para_placement.helper import add_recursively
+from para_placement.helper import add_recursively, is_int, save_obj, load_file
 
 
-def main():
+def main_compare():
+    result = get_multiple('results/compare')
+    print(result)
+
+    for size in result:
+        for key1 in result[size]:
+            result[size][key1] = result[size][key1]['heuristic']
+
+    name_map = {
+        'normal': "heuristic",
+        'unpara': 'heuristic without parallelism',
+        'one': 'heuristic with parallelism but placing on one machine'
+    }
+
+    for size in result:
+        for key in name_map:
+            result[size][name_map[key]] = result[size][key]
+            del result[size][key]
+
+    for size in result:
+        del result[size]['heuristic without parallelism']
+
+    result.pop(100, None)
+    # draw_plot(result, save_file_name='', index=0)
+    draw_plot(result, save_file_name='compare_amount', index=1, ylabel='Total mount of accepted flows')
+    # draw_plot(result, save_file_name='compare_latency', index=2, ylabel='Average Latency (ms)')
+
+
+def main_time():
     # result = load_file('./results/vl2/total.pkl', True)
-    # result = load_file('./results/bcube/result_Bcube_07_27_20_10_53.pkl', True)
+    # result = load_file('./results/compare/compare_result_Bcube_07_29_13_10_24.pkl', True)
 
-    result = get_multiple('./results/fattree')
-    # print(result)
+    result = load_file('./results/time/time.pkl')
+    print(result)
+    x, data = result
+    plt.yscale('log')
+    pure_draw_plot(x, data, xlabel='Size of topology', ylabel='time (s)', save_file_name='time')
 
-    # new_result = average_duplicated(result)
-    # print(new_result)
+    # for size in result:
+    #     for key1 in result[size]:
+    #         result[size][key1] = result[size][key1]['heuristic']
+
     # result.pop(100, None)
-    # draw_plot(result, save_file_name='vl2_2')
-
-
-def load_file(filename, p=False):
-    with open(filename, 'rb') as _input:
-        result = pickle.load(_input)
-        _input.close()
-
-    if p:
-        for k, v in result.items():
-            print(k, v)
-
-    return result
+    # draw_plot(result, save_file_name='')
 
 
 def average_duplicated(result):
@@ -53,18 +74,21 @@ def average_duplicated(result):
 
 def get_multiple(directory):
     results = dict()
-    # directory = './results/vl2'
     for root, dirs, files in os.walk(directory):
         for file_ in files:
             filename = os.path.join(root, file_)
             print(filename)
-            size = int(filename.split('_')[2])
+            size = 0
+            for string in filename.split('_'):
+                if is_int(string):
+                    size = int(string)
+                    break
             with open(filename, 'rb') as _input:
                 results[size] = pickle.load(_input)
                 _input.close()
-                item = results[size].pop('ILP one', None)
-                if item:
-                    results[size]['heuristic'] = item
+                # item = results[size].pop('ILP one', None)
+                # if item:
+                #     results[size]['heuristic'] = item
 
     ordered_results = collections.OrderedDict(sorted(results.items()))
 
@@ -73,15 +97,10 @@ def get_multiple(directory):
 
     return ordered_results
 
-    # filename = './results/vl2/total.pkl'
-    # with open(filename, 'wb') as output:
-    #     pickle.dump(ordered_results, output, pickle.HIGHEST_PROTOCOL)
-    #     output.close()
 
-
-def draw_plot(result, title='', save_file_name=''):
+def draw_plot(result, title='', save_file_name='', index=0, xlabel='Number of SFC Requests', ylabel="Objective Value"):
     x = [key for key in result]  # number of sfc requests
-    index = 0  # objective value
+    # index = 0  # objective value
     data = dict()
 
     for size in result:
@@ -90,6 +109,20 @@ def draw_plot(result, title='', save_file_name=''):
                 data[legend] = []
             data[legend].append(result[size][legend][index])
 
+    pure_draw_plot(x, data, title, save_file_name, xlabel=xlabel, ylabel=ylabel)
+
+
+def pure_draw_plot(x, data, title='', save_file_name='', xlabel='Number of SFC Requests', ylabel="Objective Value"):
+    """
+
+    :param ylabel:
+    :param xlabel:
+    :param x: 横坐标
+    :param data: legend : 纵坐标
+    :param title:
+    :param save_file_name:
+    :return:
+    """
     cycol = cycle('bgrcmk')
     marker_it = iter(['x', '', '*'])
     linestyle_it = iter(['dotted', 'solid', 'dashed'])
@@ -99,10 +132,10 @@ def draw_plot(result, title='', save_file_name=''):
                  linestyle=next(linestyle_it))
 
     # X轴的文字
-    plt.xlabel("Number of SFC Requests")
+    plt.xlabel(xlabel)
 
     # Y轴的文字
-    plt.ylabel("Objective Value")
+    plt.ylabel(ylabel)
 
     # 图表的标题
     plt.title(title)
@@ -126,4 +159,4 @@ def draw_plot(result, title='', save_file_name=''):
 
 
 if __name__ == '__main__':
-    main()
+    main_time()

@@ -5,6 +5,8 @@ import time
 import winsound
 from itertools import tee
 
+from tkinter import messagebox
+
 
 def extract_str(filename) -> string:
     return filename.split('/')[-1].split('.')[0]
@@ -20,6 +22,13 @@ def save_obj(obj, filename):
         output.close()
 
 
+def load_file(filename):
+    with open(filename, 'rb') as _input:
+        result = pickle.load(_input)
+        _input.close()
+        return result
+
+
 # Decorator for running time computing
 def print_run_time(func):
     def wrapper(*args, **kw):
@@ -29,6 +38,16 @@ def print_run_time(func):
         return ret
 
     return wrapper
+
+
+def is_int(astring):
+    """ Is the given string an integer? """
+    try:
+        int(astring)
+    except ValueError:
+        return 0
+    else:
+        return 1
 
 
 def pairwise(iterable):
@@ -72,3 +91,4 @@ def add_recursively(t1, t2):
 
 def alert(duration=1000, freq=440):
     winsound.Beep(freq, duration)
+    messagebox.showinfo("info", "Done")

@@ -13,9 +13,9 @@ def main():
     config.DC_CHOOSING_SERVER = False
 
     # model init
-    topo = topology.fat_tree_topo(n=6)
+    # topo = topology.fat_tree_topo(n=6)
     # topo = topology.b_cube_topo(k=2)
-    # topo = topology.vl2_topo(port_num_of_aggregation_switch=6, port_num_of_tor_for_server=4)
+    topo = topology.vl2_topo(port_num_of_aggregation_switch=6, port_num_of_tor_for_server=4)
     vnf_set = generate_vnf_set(size=50)
     model = Model(topo, [])
 
@@ -81,12 +81,12 @@ def iteration(model: Model):
 
 
 def main_dc():
-    topo = topology.fat_tree_topo(n=6)
+    topo = topology.fat_tree_topo(n=5)
     # topo = topology.b_cube_topo(k=2)
     # topo = topology.vl2_topo(port_num_of_aggregation_switch=6, port_num_of_tor_for_server=4)
 
     vnf_set = generate_vnf_set(size=30)
-    sfc_size = 400
+    sfc_size = 100
     model = Model(topo, generate_sfc_list2(topo, vnf_set, sfc_size))
     model.draw_topo()
 
@@ -95,17 +95,8 @@ def main_dc():
 
     result = iteration(model)
 
-    # greedy_dc(model)
-    # config.GREEDY_DFS = False
-    # model.clear()
-    # greedy_dc(model)
-    # model.clear()
-    # linear_programming(model)
-    # rounding_to_integral(model, rounding_method=rounding_one)
-    # model.print_resource_usages()
-
-    filename = "result_{}_{}_{}.pkl".format(model.topo.name, sfc_size, current_time())
-    save_obj(result, filename)
+    # filename = "result_{}_{}_{}.pkl".format(model.topo.name, sfc_size, current_time())
+    # save_obj(result, filename)
 
 
 def main_compare():
@@ -115,7 +106,7 @@ def main_compare():
     # model init
     topo = topology.b_cube_topo(k=2)
     vnf_set = generate_vnf_set(size=30)
-    sizes = [40, 80, 120, 160, 200]
+    sizes = [100]
 
     result = dict()
 
@@ -134,13 +125,39 @@ def main_compare():
         config.ONE_MACHINE = True
         result[size]['one'] = iteration(model)
 
-        filename = "compare_result_{}_{}_{}.pkl".format(model.topo.name, size, current_time())
+        filename = "./results/compare/compare_result_{}_{}_{}.pkl".format(model.topo.name, size, current_time())
         save_obj(result[size], filename)
 
-    filename = "compare_result_{}_{}.pkl".format(topo.name, current_time())
-    save_obj(result, filename)
+    # filename = "compare_result_{}_{}.pkl".format(topo.name, current_time())
+    # save_obj(result, filename)
+
+
+def main_greedy():
+    for k in [3]:
+        topo = topology.b_cube_topo(k)
+        print(Model(topo, []))
+
+        vnf_set = generate_vnf_set(size=30)
+        sfc_size = len(topo.nodes)
+        model = Model(topo, generate_sfc_list2(topo, vnf_set, sfc_size))
+        # model.draw_topo()
+
+        Configuration.para = True
+        config.DC_CHOOSING_SERVER = False
+
+        model.clear()
+        t1 = time.time()
+        linear_programming(model)
+        rounding_to_integral(model, rounding_method=rounding_one)
+        t2 = time.time() - t1
+        print(t2)
+
+        filename = "heuristic_{}_{}_{}.pkl".format(topo.name, k, current_time())
+        save_obj(t2, filename)
 
 
 if __name__ == '__main__':
-    main_compare()
-    alert()
+    # main_compare()
+    # main_dc()
+    # main_greedy()
+    main()

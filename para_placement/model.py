@@ -75,8 +75,8 @@ class SFC(BaseObject):
         self.d = d
         self.idx = idx
 
-        self.vnf_latency_sum: float = sum(vnf.latency for vnf in vnf_list)
-        self.vnf_computing_resources_sum: int = sum(vnf.computing_resource for vnf in vnf_list)
+        self.latency_sum: float = sum(vnf.latency for vnf in vnf_list)
+        self.computing_resources_sum: int = sum(vnf.computing_resource for vnf in vnf_list)
 
         self.accepted_configuration: Configuration = None
         self.configurations: List[Configuration] = []
@@ -171,7 +171,7 @@ class Model(BaseObject):
 
     def compute_resource_utilization(self):
         accepted_sfc_list = self.get_accepted_sfc_list()
-        usage = sum(sfc.vnf_computing_resources_sum for sfc in accepted_sfc_list)
+        usage = sum(sfc.computing_resources_sum for sfc in accepted_sfc_list)
         capacity = sum(self.topo.nodes[node]['computing_resource'] for node in self.topo.nodes)
         return usage / capacity
 
@@ -275,7 +275,7 @@ class Configuration(BaseObject):
     def get_latency(self) -> float:
         if Configuration.para:
             return self.route_latency + self.para_latency_analysis()
-        return self.route_latency + self.sfc.vnf_latency_sum
+        return self.route_latency + self.sfc.latency_sum
 
     # get the max resource usage ratio
     def computing_resource_ratio(self, topo: nx.Graph) -> float:
@@ -404,7 +404,7 @@ def _generate_route_list(topo: nx.Graph, sfc: SFC):
             continue
 
         if route[-1] == d:
-            if sum(topo.nodes[key]['computing_resource'] for key in route) >= sfc.vnf_computing_resources_sum:
+            if sum(topo.nodes[key]['computing_resource'] for key in route) >= sfc.computing_resources_sum:
                 route_list.append((route, latency))
         else:
             adjacent = topo[route[-1]]
