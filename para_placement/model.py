@@ -142,6 +142,28 @@ class Model(BaseObject):
             sfc.accepted_configuration = None
             sfc.configurations = []
 
+    def print_resource_usages(self):
+        nodes = dict()
+        edges = dict()
+        for sfc in self.get_accepted_sfc_list():
+            for key in sfc.accepted_configuration.computing_resource:
+                if key not in nodes:
+                    nodes[key] = 0
+                nodes[key] += sfc.accepted_configuration.computing_resource[key]
+        for sfc in self.get_accepted_sfc_list():
+            for key in sfc.accepted_configuration.edges:
+                if key not in edges:
+                    edges[key] = 0
+                edges[key] += sfc.accepted_configuration.edges[key] * sfc.throughput
+
+        for key in nodes:
+            print(key, "{}/{}".format(nodes[key], self.topo.nodes[key]['computing_resource']),
+                  "{:.2f}%".format(nodes[key] / self.topo.nodes[key]['computing_resource'] * 100))
+
+        for key in edges:
+            print(key, "{}/{}".format(edges[key], self.topo.edges.get(key)['bandwidth']),
+                  "{:.2f}%".format(edges[key] / self.topo.edges.get(key)['bandwidth'] * 100))
+
 
 def generate_vnf_set(size: int = 30) -> List[VNF]:
     vnf_list = []
@@ -210,7 +232,7 @@ class Configuration(BaseObject):
         self.sfc = sfc
         self.route = route
         self.place = place
-        self._route_latency = route_latency
+        self.route_latency = route_latency
         self.name = "{}_{}".format(sfc.idx, idx)
 
         # computing resource
@@ -241,8 +263,8 @@ class Configuration(BaseObject):
     # latency (normal & para)
     def get_latency(self) -> float:
         if Configuration.para:
-            return self._route_latency + self.para_latency_analysis()
-        return self._route_latency + self.sfc.vnf_latency_sum
+            return self.route_latency + self.para_latency_analysis()
+        return self.route_latency + self.sfc.vnf_latency_sum
 
     # get the max resource usage ratio
     def computing_resource_ratio(self, topo: nx.Graph) -> float:
