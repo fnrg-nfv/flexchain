@@ -5,8 +5,6 @@ import time
 import winsound
 from itertools import tee
 
-from tkinter import messagebox
-
 
 def extract_str(filename) -> string:
     return filename.split('/')[-1].split('.')[0]
@@ -63,8 +61,8 @@ def add_recursively(t1, t2):
     if t2 is None:
         return t1
 
-    if type(t1) is not type(t2):
-        return None
+    # if type(t1) is not type(t2):
+    #     return None
 
     if type(t1) is dict:
         ret = dict()
@@ -91,4 +89,3 @@ def add_recursively(t1, t2):
 
 def alert(duration=1000, freq=440):
     winsound.Beep(freq, duration)
-    messagebox.showinfo("info", "Done")

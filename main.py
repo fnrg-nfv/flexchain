@@ -10,41 +10,32 @@ topo_files = ['./gml_data/Cernet.gml', './gml_data/Geant2012.gml', './gml_data/I
 def main():
     # parameter init
     Configuration.para = True
-    config.DC_CHOOSING_SERVER = False
+    config.DC_CHOOSING_SERVER = True
 
     # model init
-    # topo = topology.fat_tree_topo(n=6)
+    topo = topology.fat_tree_topo(n=6)
     # topo = topology.b_cube_topo(k=2)
-    topo = topology.vl2_topo(port_num_of_aggregation_switch=6, port_num_of_tor_for_server=4)
-    vnf_set = generate_vnf_set(size=50)
+    # topo = topology.vl2_topo(port_num_of_aggregation_switch=6, port_num_of_tor_for_server=4)
+    vnf_set = generate_vnf_set(size=30)
     model = Model(topo, [])
 
     model.draw_topo()
 
     iter_times = 10
     unit = 40
-    dup_times = 5
     result = {}
     temple_files = []
+    sizes = [unit * i + unit for i in range(iter_times)]
+    sizes = [400]
 
-    for i in range(iter_times):
-        size = unit * i + unit
-        # result[size] = []
-        # for _ in range(dup_times):
-        #     model = Model(topo, generate_sfc_list(topo=topo, vnf_set=vnf_set, size=size, base_idx=0))
-        #     cur_result = iteration(model)
-        #     temple_files.append("result_{}_{}_{}.pkl".format(model.topo.name, size, current_time()))
-        #     save_obj(cur_result, temple_files[-1])
-        #     result[size].append(cur_result)
-        model = Model(topo, generate_sfc_list(topo=topo, vnf_set=vnf_set, size=size, base_idx=0))
+    for size in sizes:
+        model = Model(topo, generate_sfc_list2(topo=topo, vnf_set=vnf_set, size=size, base_idx=0))
         result[size] = iteration(model)
-        temple_files.append("result_{}_{}_{}.pkl".format(model.topo.name, size, current_time()))
+        temple_files.append("./results/{}/{}_{}.pkl".format(model.topo.name, size, current_time()))
         save_obj(result[size], temple_files[-1])
 
-    filename = "result_{}_{}.pkl".format(model.topo.name, current_time())
+    filename = "./results/{}/{}.pkl".format(model.topo.name, current_time())
     save_obj(result, filename)
-
-    # draw_plot(result, "result_{}_{}".format(model.topo.name, current_time()))
 
     for temple_file in temple_files:
         os.remove(temple_file)
@@ -53,24 +44,15 @@ def main():
 @print_run_time
 def iteration(model: Model):
     print("PLACEMENT MAIN")
+    config.K = 8000
     ret = dict()
 
     model.clear()
     ret['greedy'] = greedy_dc(model)
 
-    # model.clear()
-    # ret['greedy 2'] = greedy2(model)
-
     model.clear()
-    config.K = 600
     ret['optimal'] = linear_programming(model)
-    # filename = "solved_model_{}.pkl".format(uuid.uuid4())
-    # model.save(filename)
-    # ret['ILP greedy'] = rounding_to_integral(model, rounding_method=rounding_greedy)
-    #
-    # model = Model.load(filename)
     ret['heuristic'] = rounding_to_integral(model, rounding_method=rounding_one)
-    # os.remove(filename)
 
     print("\n>>>>>>>>>>>>>>>>>> Result Summary <<<<<<<<<<<<<<<<<<")
     print("{}\n".format(model))
@@ -81,22 +63,59 @@ def iteration(model: Model):
 
 
 def main_dc():
-    topo = topology.fat_tree_topo(n=5)
+    topo = topology.fat_tree_topo(n=6)
     # topo = topology.b_cube_topo(k=2)
     # topo = topology.vl2_topo(port_num_of_aggregation_switch=6, port_num_of_tor_for_server=4)
 
     vnf_set = generate_vnf_set(size=30)
-    sfc_size = 100
+    sfc_size = 200
     model = Model(topo, generate_sfc_list2(topo, vnf_set, sfc_size))
     model.draw_topo()
 
     Configuration.para = True
-    config.DC_CHOOSING_SERVER = False
+    config.DC_CHOOSING_SERVER = True
 
     result = iteration(model)
 
     # filename = "result_{}_{}_{}.pkl".format(model.topo.name, sfc_size, current_time())
     # save_obj(result, filename)
+
+
+@print_run_time
+def comparison(model: Model, init_k=4000):
+    print("PLACEMENT MAIN")
+    ret = dict()
+
+    # model.clear()
+    # ret['greedy'] = greedy_dc(model)
+
+    model.clear()
+    config.K = init_k
+    Configuration.para = True
+    config.ONE_MACHINE = False
+    linear_programming(model)
+    ret['heuristic'] = rounding_to_integral(model, rounding_method=rounding_one)
+
+    model.clear()
+    config.K = init_k
+    Configuration.para = False
+    config.ONE_MACHINE = False
+    linear_programming(model)
+    ret['PWOP'] = rounding_to_integral(model, rounding_method=rounding_one)
+
+    model.clear()
+    config.K = init_k
+    Configuration.para = True
+    config.ONE_MACHINE = True
+    linear_programming(model)
+    ret['PWPOM'] = rounding_to_integral(model, rounding_method=rounding_one)
+
+    print("\n>>>>>>>>>>>>>>>>>> Result Summary <<<<<<<<<<<<<<<<<<")
+    print("{}\n".format(model))
+    for key in ret:
+        print("{}: {}".format(key, ret[key]))
+
+    return ret
 
 
 def main_compare():
@@ -106,30 +125,19 @@ def main_compare():
     # model init
     topo = topology.b_cube_topo(k=2)
     vnf_set = generate_vnf_set(size=30)
-    sizes = [100]
+    sizes = [20 * (i + 1) for i in range(10)]
+    # sizes = [100, 120, 140]
 
     result = dict()
 
     for size in sizes:
-        model = Model(topo, generate_sfc_list(topo, vnf_set, size, 0))
+        model = Model(topo, generate_sfc_list2(topo, vnf_set, size, 0))
         model.draw_topo()
-        result[size] = dict()
+        result[size] = comparison(model)
 
-        Configuration.para = True
-        config.ONE_MACHINE = False
-        result[size]['normal'] = iteration(model)
-        Configuration.para = False
-        config.ONE_MACHINE = False
-        result[size]['unpara'] = iteration(model)
-        Configuration.para = True
-        config.ONE_MACHINE = True
-        result[size]['one'] = iteration(model)
+        save_obj(result[size], "./results/compare/{}_{}_{}.pkl".format(model.topo.name, size, current_time()))
 
-        filename = "./results/compare/compare_result_{}_{}_{}.pkl".format(model.topo.name, size, current_time())
-        save_obj(result[size], filename)
-
-    # filename = "compare_result_{}_{}.pkl".format(topo.name, current_time())
-    # save_obj(result, filename)
+    save_obj(result, "./results/compare/{}_{}.pkl".format(topo.name, current_time()))
 
 
 def main_greedy():
@@ -157,7 +165,7 @@ def main_greedy():
 
 
 if __name__ == '__main__':
-    # main_compare()
+    main_compare()
     # main_dc()
     # main_greedy()
-    main()
+    # main()

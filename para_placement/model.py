@@ -203,7 +203,7 @@ def generate_vnf_set(size: int = 30) -> List[VNF]:
 # sfc latency demand: 10~30 ms
 # sfc throughput demand: 32~128 Mbps todo 50~500
 
-def generate_sfc_list(topo: nx.Graph, vnf_set: List[VNF], size=100, base_idx=0):
+def generate_sfc_list_old(topo: nx.Graph, vnf_set: List[VNF], size=100, base_idx=0):
     ret = []
     for i in range(size):
         n = random.randint(SFC_CONFIG['VNF_LO'], SFC_CONFIG['VNF_HI'])

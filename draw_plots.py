@@ -18,8 +18,8 @@ def main_compare():
 
     name_map = {
         'normal': "heuristic",
-        'unpara': 'heuristic without parallelism',
-        'one': 'heuristic with parallelism but placing on one machine'
+        'unpara': 'HWOP',
+        'one': 'HWPOM'
     }
 
     for size in result:
@@ -52,6 +52,19 @@ def main_time():
 
     # result.pop(100, None)
     # draw_plot(result, save_file_name='')
+
+
+def main():
+    result = load_file('./results/compare/Bcube_07_31_12_38_44.pkl')
+    result1 = load_file('./results/compare/Bcube_07_31_13_12_51.pkl')
+    result2 = load_file('./results/compare/Bcube_07_31_14_57_07.pkl')
+    for key in result:
+        print(key, result[key])
+        if key in result1:
+            print(result1[key])
+        if key in result2:
+            print(result2[key])
+    draw_plot(result, save_file_name='')
 
 
 def average_duplicated(result):
@@ -159,4 +172,4 @@ def pure_draw_plot(x, data, title='', save_file_name='', xlabel='Number of SFC R
 
 
 if __name__ == '__main__':
-    main_time()
+    main()

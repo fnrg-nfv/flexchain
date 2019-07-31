@@ -134,7 +134,7 @@ def fat_tree_topo(n=4):
                           "Pod {} aggregation switch {}".format(j, aggregation_switch_index_in_pod), bandwidth=1000,
                           latency=TOPO_CONFIG2.latency())
 
-    topo.name = 'Fat-Tree'
+    topo.name = 'fattree'
 
     return topo
 

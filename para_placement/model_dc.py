@@ -2,7 +2,6 @@ import copy
 
 from pulp import *
 
-import para_placement.config as config
 from para_placement.model import *
 # bfs
 from para_placement.model import _generate_configurations_for_one_route, _dijkstra
@@ -28,19 +27,24 @@ def _generate_configurations_for_one_route_dc(topo: nx.Graph, route: List[int], 
                 new_placement = cur_placement[:]
                 new_placement.append(next_server_pos)
 
-                vnf_index = len(new_placement) - 1
-                node_capacity = topo.nodes[route[server_pos_list[next_server_pos]]]['computing_resource']
-                usage = sfc.vnf_list[vnf_index].computing_resource
-                while vnf_index > 0 and new_placement[vnf_index] == new_placement[vnf_index - 1]:
-                    vnf_index -= 1
-                    usage += sfc.vnf_list[vnf_index].computing_resource
-                if usage <= node_capacity:
-                    queue.append(new_placement)
+                # vnf_index = len(new_placement) - 1
+                # node_capacity = topo.nodes[route[server_pos_list[next_server_pos]]]['computing_resource']
+                # usage = sfc.vnf_list[vnf_index].computing_resource
+                # while vnf_index > 0 and new_placement[vnf_index] == new_placement[vnf_index - 1]:
+                #     vnf_index -= 1
+                #     usage += sfc.vnf_list[vnf_index].computing_resource
+                # if usage <= node_capacity:
+                queue.append(new_placement)
 
-    configuration_set = [Configuration(sfc, route, placement, route_latency, "{}_{}".format(route_idx, idx)) for
-                         idx, placement in enumerate(placement_set)]
+    configurations = [Configuration(sfc, route, placement, route_latency, "{}_{}".format(route_idx, idx)) for
+                      idx, placement in enumerate(placement_set)]
+    for configuration in configurations:
+        for node in configuration.computing_resource:
+            if configuration.computing_resource[node] > topo.nodes[node]['computing_resource']:
+                configurations.remove(configuration)
+                break
 
-    return configuration_set
+    return configurations
 
 
 def _route_capacity(topo: nx.Graph, route: List):
@@ -51,6 +55,8 @@ def _bfs_route(topo: nx.Graph, s, d, sfc: SFC) -> (List, float):
     queue = [([s], 0)]
     passed_node = [s]
     servers = [node for node in topo.nodes if topo.nodes[node]['computing_resource'] > 0]
+    if d in servers:
+        servers.remove(d)
 
     while queue:
         route, latency = queue.pop(0)
@@ -63,9 +69,9 @@ def _bfs_route(topo: nx.Graph, s, d, sfc: SFC) -> (List, float):
             for adj_node in adjacent_nodes:
                 if adj_node in passed_node or adj_node in servers:
                     continue
-                passed_node.append(adj_node)
                 if topo[cur_node][adj_node]['bandwidth'] <= sfc.throughput:
                     continue
+                passed_node.append(adj_node)
                 new_route = route[:]
                 new_route.append(adj_node)
                 queue.append((new_route, latency + adjacent_nodes[adj_node]['latency']))
@@ -102,24 +108,23 @@ def _generate_configurations_dc_by_server(topo: nx.Graph, sfc: SFC):
     routes = []
     sfc_min_usage = min(vnf.computing_resource for vnf in sfc.vnf_list)
     sfc_max_usage = max(vnf.computing_resource for vnf in sfc.vnf_list)
-    servers = [node for node in topo.nodes if topo.nodes[node]['computing_resource'] > sfc_min_usage]
+    servers = [node for node in topo.nodes if topo.nodes[node]['computing_resource'] >= sfc_min_usage]
     servers.sort(key=lambda node: topo.nodes[node]['computing_resource'], reverse=True)
     top_servers = servers[:len(sfc.vnf_list)]
     if sum(topo.nodes[server]['computing_resource'] for server in top_servers) < sfc.computing_resources_sum:
         return routes
-    if max(topo.nodes[node]['computing_resource'] for node in servers) < sfc_max_usage:
+    if topo.nodes[top_servers[0]]['computing_resource'] < sfc_max_usage:
         return routes
 
     route_idx = 0
     print(":{} ".format(len(sfc.vnf_list)), end="")
     for i in range(1, len(sfc.vnf_list) + 1):
-        print("-{} ".format(i), end="")
+        print("-{}({}) ".format(i, len(configurations)), end="")
         for server_permutation in itertools.permutations(servers, i):
             server_permutation = list(server_permutation)
 
-            if max(topo.nodes[node]['computing_resource'] for node in server_permutation) < sfc_max_usage:
-                continue
-            if _route_capacity(topo, server_permutation) < sfc.computing_resources_sum:
+            if all(topo.nodes[node]['computing_resource'] < sfc_max_usage for node in server_permutation) or \
+                    _route_capacity(topo, server_permutation) < sfc.computing_resources_sum:
                 continue
 
             route, route_latency = _generate_routes_by_permutation(topo, [sfc.s, *server_permutation, sfc.d], sfc)
@@ -134,8 +139,8 @@ def _generate_configurations_dc_by_server(topo: nx.Graph, sfc: SFC):
 
 
 route_limit = 15
-# search_limit = 256 * 1024
-search_limit = 128 * 1024
+search_limit = 256 * 1024
+# search_limit = 128 * 1024
 
 
 def _generate_configurations_dc_by_bfs(topo: nx.Graph, sfc: SFC) -> List[Configuration]:
@@ -306,7 +311,7 @@ def generate_configuration_greedy_dc_dfs(topo: nx.Graph, sfc: SFC, deep: int = 1
             placed_res = 0
             place = []
             while sub_sfc.vnf_list and sub_sfc.vnf_list[0].computing_resource <= topo.nodes[server][
-                    'computing_resource']:
+                'computing_resource']:
                 res = sub_sfc.vnf_list[0].computing_resource
                 placed_res += res
                 topo.nodes[server]['computing_resource'] -= res
