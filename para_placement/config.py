@@ -12,9 +12,9 @@ TOPO_CONFIG = {
 
 TOPO_CONFIG2 = lambda: None
 # TOPO_CONFIG2.latency = lambda: random.uniform(0.1, 0.3)
-TOPO_CONFIG2.latency = lambda: 0.01
+TOPO_CONFIG2.latency = lambda: random.uniform(0.01, 0.1)
 TOPO_CONFIG2.bandwidth = lambda: 1000
-TOPO_CONFIG2.cpu = lambda: random.randint(4000, 8000)
+TOPO_CONFIG2.cpu = lambda: random.randint(5000, 10000)
 
 SFC_CONFIG = {
     'VNF_LO': 3,
@@ -38,7 +38,8 @@ NF_CONFIG = {
 
 EPSILON = 0.33
 
-K = 600
+# K = 600
+K = 300
 
 DC = True
 DC_CHOOSING_SERVER = True

@@ -134,6 +134,9 @@ def rounding_greedy(model: Model):
             else:
                 sfc.accepted_configuration = None
 
+    if not model.get_accepted_sfc_list():
+        greedy_dc(model)
+
 
 def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (float, int, float, float):
     print("\n>>> Start Rounding <<<")
@@ -154,12 +157,9 @@ def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (floa
                                  for sfc in accepted_sfc_list
                                  if (start, end) in sfc.accepted_configuration.edges)
 
-    if len(accepted_sfc_list) > 1:
+    if accepted_sfc_list:
         linear_programming(sub_model)
         rounding_to_integral(sub_model, rounding_method)
-    else:
-        model.clear()
-        greedy_dc(model)
 
     obj_val = objective_value(model, EPSILON)
     accept_sfc_number = len(model.get_accepted_sfc_list())
