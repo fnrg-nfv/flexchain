@@ -5,14 +5,7 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/Figure2.pptx" beforeDir="false" afterPath="$PROJECT_DIR$/docs/Figure2.pptx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/idea.docx" beforeDir="false" afterPath="$PROJECT_DIR$/docs/idea.docx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/draw_plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/draw_plots.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/para_placement/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/para_placement/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/para_placement/helper.py" beforeDir="false" afterPath="$PROJECT_DIR$/para_placement/helper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/para_placement/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/para_placement/model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/para_placement/model_dc.py" beforeDir="false" afterPath="$PROJECT_DIR$/para_placement/model_dc.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/para_placement/solution.py" beforeDir="false" afterPath="$PROJECT_DIR$/para_placement/solution.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/para_placement/topology.py" beforeDir="false" afterPath="$PROJECT_DIR$/para_placement/topology.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/figures/framework (2).pdf" beforeDir="false" afterPath="$PROJECT_DIR$/figures/framework (2).pdf" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -242,8 +235,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/draw_plots.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="247">
-              <caret line="60" column="22" lean-forward="true" selection-start-line="60" selection-start-column="22" selection-end-line="60" selection-end-column="22" />
+            <state relative-caret-position="418">
+              <caret line="84" column="21" lean-forward="true" selection-start-line="84" selection-start-column="21" selection-end-line="84" selection-end-column="21" />
               <folding>
                 <element signature="e#210#1088#0" />
                 <element signature="e#294#384#0" />
@@ -424,7 +417,7 @@
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="7">
+  <component name="ProjectFrameBounds" extendedState="6">
     <option name="x" value="-8" />
     <option name="y" value="-8" />
     <option name="width" value="1400" />
@@ -641,12 +634,12 @@
       <workItem from="1563761968905" duration="73461000" />
       <workItem from="1564020269128" duration="28858000" />
       <workItem from="1564069993605" duration="12724000" />
-      <workItem from="1564127731829" duration="155215000" />
+      <workItem from="1564127731829" duration="156733000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="313185000" />
+    <option name="totallyTimeSpent" value="314703000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -658,14 +651,14 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1936" height="1056" extended-state="7" />
+    <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.12473348" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.329718" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.50959486" visible="true" weight="0.35791758" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.50959486" visible="true" weight="0.35791758" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.45119306" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -680,7 +673,7 @@
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="1" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="2" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="3" weight="0.25" />
-      <window_info active="true" anchor="right" id="SciView" order="4" sideWeight="0.49278352" visible="true" weight="0.38219616" />
+      <window_info anchor="right" id="SciView" order="4" sideWeight="0.49278352" visible="true" weight="0.38219616" />
       <window_info anchor="right" id="Database" order="5" />
     </layout>
   </component>
@@ -1111,8 +1104,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/draw_plots.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="247">
-          <caret line="60" column="22" lean-forward="true" selection-start-line="60" selection-start-column="22" selection-end-line="60" selection-end-column="22" />
+        <state relative-caret-position="418">
+          <caret line="84" column="21" lean-forward="true" selection-start-line="84" selection-start-column="21" selection-end-line="84" selection-end-column="21" />
           <folding>
             <element signature="e#210#1088#0" />
             <element signature="e#294#384#0" />
