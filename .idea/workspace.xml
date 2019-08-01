@@ -5,7 +5,9 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/Figure2.pptx" beforeDir="false" afterPath="$PROJECT_DIR$/docs/Figure2.pptx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/idea.docx" beforeDir="false" afterPath="$PROJECT_DIR$/docs/idea.docx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/figures/framework (2).pdf" beforeDir="false" afterPath="$PROJECT_DIR$/figures/framework (2).pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/~WRL2754.tmp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/draw_plots.py" beforeDir="false" afterPath="$PROJECT_DIR$/draw_plots.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/figures/placement_solution.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/figures/placement_solution.pdf" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -22,7 +24,7 @@
               <entry file="file://$PROJECT_DIR$/main.py">
                 <provider selected="true" editor-type-id="text-editor">
                   <state relative-caret-position="384">
-                    <caret line="104" lean-forward="true" selection-start-line="104" selection-end-line="104" />
+                    <caret line="104" selection-start-line="104" selection-end-line="104" />
                     <folding>
                       <element signature="e#262#1700#0" />
                       <element signature="e#391#425#0" />
@@ -45,7 +47,7 @@
               <entry file="file://$PROJECT_DIR$/para_placement/config.py">
                 <provider selected="true" editor-type-id="text-editor">
                   <state relative-caret-position="422">
-                    <caret line="29" column="13" lean-forward="true" selection-start-line="29" selection-start-column="13" selection-end-line="29" selection-end-column="13" />
+                    <caret line="29" column="13" selection-start-line="29" selection-start-column="13" selection-end-line="29" selection-end-column="13" />
                   </state>
                 </provider>
               </entry>
@@ -171,7 +173,7 @@
         <entry file="file://$PROJECT_DIR$/para_placement/model_dc.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="283">
-              <caret line="282" lean-forward="true" selection-start-line="282" selection-end-line="282" />
+              <caret line="282" selection-start-line="282" selection-end-line="282" />
               <folding>
                 <element signature="e#359#1765#0" />
                 <element signature="e#2151#3116#0" />
@@ -235,17 +237,17 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/draw_plots.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="418">
-              <caret line="84" column="21" lean-forward="true" selection-start-line="84" selection-start-column="21" selection-end-line="84" selection-end-column="21" />
+            <state relative-caret-position="421">
+              <caret line="149" column="22" lean-forward="true" selection-start-line="149" selection-start-column="22" selection-end-line="149" selection-end-column="22" />
               <folding>
-                <element signature="e#210#1088#0" />
                 <element signature="e#294#384#0" />
-                <element signature="e#401#469#0" />
                 <element signature="e#572#703#0" />
                 <element signature="e#656#757#0" />
                 <element signature="e#181#844#0" />
                 <element signature="e#173#226#0" />
                 <element signature="e#493#514#0" />
+                <element signature="e#1607#1993#0" />
+                <element signature="e#1843#1957#0" />
                 <element signature="e#418#1015#0" />
                 <element signature="e#469#897#0" />
                 <element signature="e#679#829#0" />
@@ -259,12 +261,11 @@
                 <element signature="e#2225#2693#0" />
                 <element signature="e#535#692#0" />
                 <element signature="e#575#692#0" />
-                <element signature="e#2745#3734#0" />
                 <element signature="e#3472#3567#1" />
-                <element signature="e#3017#3159#0" />
+                <element signature="e#4396#4538#0" />
                 <element signature="e#3907#3914#0" />
-                <element signature="e#3411#3711#0" />
-                <element signature="e#3521#3643#0" />
+                <element signature="e#4779#5079#0" />
+                <element signature="e#4889#5011#0" />
               </folding>
             </state>
           </provider>
@@ -411,9 +412,9 @@
         <option value="$PROJECT_DIR$/para_placement/solution.py" />
         <option value="$PROJECT_DIR$/para_placement/helper.py" />
         <option value="$PROJECT_DIR$/para_placement/model_dc.py" />
-        <option value="$PROJECT_DIR$/draw_plots.py" />
         <option value="$PROJECT_DIR$/main.py" />
         <option value="$PROJECT_DIR$/para_placement/config.py" />
+        <option value="$PROJECT_DIR$/draw_plots.py" />
       </list>
     </option>
   </component>
@@ -610,8 +611,8 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.main" />
         <item itemvalue="Python.draw_plots" />
+        <item itemvalue="Python.main" />
         <item itemvalue="Python.model_dc" />
         <item itemvalue="Python.topology" />
         <item itemvalue="Python.model" />
@@ -634,12 +635,12 @@
       <workItem from="1563761968905" duration="73461000" />
       <workItem from="1564020269128" duration="28858000" />
       <workItem from="1564069993605" duration="12724000" />
-      <workItem from="1564127731829" duration="156733000" />
+      <workItem from="1564127731829" duration="158729000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="314703000" />
+    <option name="totallyTimeSpent" value="316699000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -652,6 +653,7 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.12473348" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -668,7 +670,7 @@
       <window_info anchor="bottom" id="Database Changes" order="9" />
       <window_info anchor="bottom" id="Event Log" order="10" sideWeight="0.50053304" side_tool="true" weight="0.37201735" />
       <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.49946696" weight="0.329718" />
-      <window_info anchor="bottom" id="Python Console" order="12" sideWeight="0.49946696" weight="0.6008677" />
+      <window_info anchor="bottom" id="Python Console" order="12" sideWeight="0.49946696" weight="0.38828632" />
       <window_info anchor="right" x="0" y="0" width="434" height="856" id="Documentation" order="0" sideWeight="0.5072165" side_tool="true" weight="0.39179105" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="1" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="2" weight="0.25" />
@@ -975,7 +977,7 @@
     <entry file="file://$PROJECT_DIR$/para_placement/model_dc.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="283">
-          <caret line="282" lean-forward="true" selection-start-line="282" selection-end-line="282" />
+          <caret line="282" selection-start-line="282" selection-end-line="282" />
           <folding>
             <element signature="e#359#1765#0" />
             <element signature="e#2151#3116#0" />
@@ -1077,7 +1079,7 @@
     <entry file="file://$PROJECT_DIR$/main.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="384">
-          <caret line="104" lean-forward="true" selection-start-line="104" selection-end-line="104" />
+          <caret line="104" selection-start-line="104" selection-end-line="104" />
           <folding>
             <element signature="e#262#1700#0" />
             <element signature="e#391#425#0" />
@@ -1095,26 +1097,19 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/para_placement/config.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="422">
-          <caret line="29" column="13" lean-forward="true" selection-start-line="29" selection-start-column="13" selection-end-line="29" selection-end-column="13" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/draw_plots.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="418">
-          <caret line="84" column="21" lean-forward="true" selection-start-line="84" selection-start-column="21" selection-end-line="84" selection-end-column="21" />
+        <state relative-caret-position="421">
+          <caret line="149" column="22" lean-forward="true" selection-start-line="149" selection-start-column="22" selection-end-line="149" selection-end-column="22" />
           <folding>
-            <element signature="e#210#1088#0" />
             <element signature="e#294#384#0" />
-            <element signature="e#401#469#0" />
             <element signature="e#572#703#0" />
             <element signature="e#656#757#0" />
             <element signature="e#181#844#0" />
             <element signature="e#173#226#0" />
             <element signature="e#493#514#0" />
+            <element signature="e#1607#1993#0" />
+            <element signature="e#1843#1957#0" />
             <element signature="e#418#1015#0" />
             <element signature="e#469#897#0" />
             <element signature="e#679#829#0" />
@@ -1128,13 +1123,19 @@
             <element signature="e#2225#2693#0" />
             <element signature="e#535#692#0" />
             <element signature="e#575#692#0" />
-            <element signature="e#2745#3734#0" />
             <element signature="e#3472#3567#1" />
-            <element signature="e#3017#3159#0" />
+            <element signature="e#4396#4538#0" />
             <element signature="e#3907#3914#0" />
-            <element signature="e#3411#3711#0" />
-            <element signature="e#3521#3643#0" />
+            <element signature="e#4779#5079#0" />
+            <element signature="e#4889#5011#0" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/para_placement/config.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="422">
+          <caret line="29" column="13" selection-start-line="29" selection-start-column="13" selection-end-line="29" selection-end-column="13" />
         </state>
       </provider>
     </entry>
