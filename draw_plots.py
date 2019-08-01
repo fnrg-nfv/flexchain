@@ -9,7 +9,7 @@ from para_placement.helper import add_recursively, is_int, save_obj, load_file
 
 
 def main_compare():
-    result = get_multiple('results/compare')
+    result = get_multiple('results/compare/old')
     print(result)
 
     for size in result:
@@ -18,8 +18,8 @@ def main_compare():
 
     name_map = {
         'normal': "heuristic",
-        'unpara': 'HWOP',
-        'one': 'HWPOM'
+        'unpara': 'PWOP',
+        'one': 'PWPOM'
     }
 
     for size in result:
@@ -28,12 +28,12 @@ def main_compare():
             del result[size][key]
 
     for size in result:
-        del result[size]['heuristic without parallelism']
+        del result[size]['PWOP']
 
     result.pop(100, None)
-    # draw_plot(result, save_file_name='', index=0)
-    draw_plot(result, save_file_name='compare_amount', index=1, ylabel='Total mount of accepted flows')
-    # draw_plot(result, save_file_name='compare_latency', index=2, ylabel='Average Latency (ms)')
+    # draw_plot(result, save_file_name='compare', index=0)
+    # draw_plot(result, save_file_name='compare_flow', index=1, ylabel='Total mount of accepted flows')
+    draw_plot(result, save_file_name='compare_latency', index=2, ylabel='Average Latency (ms)')
 
 
 def main_time():
@@ -137,9 +137,8 @@ def pure_draw_plot(x, data, title='', save_file_name='', xlabel='Number of SFC R
     :return:
     """
     cycol = cycle('bgrcmk')
-    marker_it = iter(['x', '', '*'])
-    linestyle_it = iter(['dotted', 'solid', 'dashed'])
-
+    marker_it = iter(['s', '^', 'o'])
+    linestyle_it = iter(['-', '--', ':'])
     for legend in data:
         plt.plot(x, data[legend], marker=next(marker_it), label=legend, color=next(cycol), linewidth=2,
                  linestyle=next(linestyle_it))
@@ -172,4 +171,4 @@ def pure_draw_plot(x, data, title='', save_file_name='', xlabel='Number of SFC R
 
 
 if __name__ == '__main__':
-    main()
+    main_compare()
