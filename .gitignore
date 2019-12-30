@@ -3,6 +3,7 @@
 
 *.mps
 *.pyc
-docs/~$idea.docx
+# docs/~$idea.docx
+~$*
 *.txt
 *.sol
