@@ -4,7 +4,21 @@ from para_placement import topology
 from para_placement.helper import *
 from para_placement.solution import *
 
-topo_files = ['./gml_data/Cernet.gml', './gml_data/Geant2012.gml', './gml_data/Internetmci.gml']
+def single_test_rorp():
+    Configuration.para = True
+    config.DC_CHOOSING_SERVER = True
+
+    topo = topology.vl2_topo(port_num_of_aggregation_switch=6, port_num_of_tor_for_server=4)
+    vnf_set = generate_vnf_set(size=30)
+
+    model = Model(topo, generate_sfc_list2(topo=topo, vnf_set=vnf_set, size=200, base_idx=0))
+    model.draw_topo()
+
+    # optimal = linear_programming(model)
+    # rorp_result = rorp(model)
+
+    # model.clear()
+    greedy_result = greedy_para(model)
 
 
 def main():
@@ -26,7 +40,6 @@ def main():
     result = {}
     temple_files = []
     sizes = [unit * i + unit for i in range(iter_times)]
-    sizes = [400]
 
     for size in sizes:
         model = Model(topo, generate_sfc_list2(topo=topo, vnf_set=vnf_set, size=size, base_idx=0))
@@ -165,7 +178,4 @@ def main_greedy():
 
 
 if __name__ == '__main__':
-    main_compare()
-    # main_dc()
-    # main_greedy()
-    # main()
+    single_test_rorp()

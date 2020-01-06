@@ -2,84 +2,95 @@ import copy
 
 from pulp import *
 
-from para_placement.config import EPSILON, DC
+from para_placement.config import DC
 from para_placement.evaluation import *
 from para_placement.model import *
-from para_placement.model_dc import generate_configurations_dc, generate_configuration_greedy_dc_dfs
+from para_placement.cg import generate_configurations_dc, generate_configuration_greedy_dc_dfs
+from progress.bar import PixelBar
+from ttictoc import TicToc
 
 
 def linear_programming(model: Model) -> (float, int, float, float):
     print("\n>>> Start LP <<<")
     problem = LpProblem("VNF Placement", LpMaximize)
 
-    print(">> Variables init...")
+    # print(">> Variables init...")
     config.K = max(config.K / 2, 10)
-    for idx, sfc in enumerate(model.sfc_list):
-        if DC:
-            sfc.configurations = generate_configurations_dc(model.topo, sfc)
-        else:
-            sfc.configurations = generate_configurations_for_one_sfc(model.topo, sfc)
+    with TicToc("GC"), PixelBar(">> Generating configuration set for SFC") as bar:
+        bar.max = len(model.sfc_list)
+        for idx, sfc in enumerate(model.sfc_list):
+            if DC:
+                sfc.configurations = generate_configurations_dc(
+                    model.topo, sfc)
+            else:
+                sfc.configurations = generate_configurations_for_one_sfc(
+                    model.topo, sfc)
 
-        print("\r>> You have generated {}/{} configuration sets (last size: {}({},{}))"
-              .format(idx + 1, len(model.sfc_list), len(sfc.configurations), len(sfc.vnf_list),
-                      sfc.computing_resources_sum), end='')
-        # filter configurations whose latency is legal. IMPORTANT
-        sfc.configurations = list(filter(lambda c: c.get_latency() <= sfc.latency, sfc.configurations))
+            # print("\r>> You have generated {}/{} configuration sets (last size: {}({},{}))"
+            #       .format(idx + 1, len(model.sfc_list), len(sfc.configurations), len(sfc.vnf_list),
+            #               sfc.computing_resources_sum), end='')
+            # filter configurations whose latency is legal. IMPORTANT
+            sfc.configurations = list(
+                filter(lambda c: c.get_latency() <= sfc.latency, sfc.configurations))
 
-        for configuration in sfc.configurations:
-            configuration.var = LpVariable(configuration.name, 0, 1, LpContinuous)
+            for configuration in sfc.configurations:
+                configuration.var = LpVariable(
+                    configuration.name, 0, 1, LpContinuous)
+
+            bar.next()
 
     # total number of valid sfc
-    print()
-    print("Number of LP Variables: {}".format(sum(len(sfc.configurations) for sfc in model.sfc_list)))
-    print("Valid sfc: {}".format(sum(len(s.configurations) > 0 for s in model.sfc_list)))
+    config_num = sum(len(sfc.configurations) for sfc in model.sfc_list)
+    valid_sfc_num = sum(len(sfc.configurations) for sfc in model.sfc_list)
+    print("Number of LP Variables: {}\tValid SFC: {}".format(
+        config_num, valid_sfc_num))
 
-    print(">> Objective function init...")
     # Objective function
-    problem += lpSum(
-        (configuration.var * (1 - EPSILON * configuration.get_latency()) for configuration in sfc.configurations)
-        for sfc in model.sfc_list), "Total number of accept requests minus total latency"
+    with TicToc("OBJ"):
+        problem += lpSum((configuration.var for configuration in sfc.configurations)
+                         for sfc in model.sfc_list), "Total number of accepted requests"
 
     # Constraints
-    print(">> Subjective function init", end="")
-    # basic constraints
-    print(", Basic", end="")
-    for sfc in model.sfc_list:
-        problem += lpSum(configuration.var for configuration in sfc.configurations) <= 1.0, "Basic_{}".format(sfc.idx)
+    with TicToc("SBJ Basic"):
+        # basic constraints
+        for sfc in model.sfc_list:
+            problem += lpSum(
+                configuration.var for configuration in sfc.configurations) <= 1.0, "Basic_{}".format(sfc.idx)
 
     # computing resource constraints
-    print(", Computing resource", end="")
-    for index, info in model.topo.nodes.data():
-        problem += lpSum(configuration.var * configuration.computing_resource[index]
-                         for sfc in model.sfc_list
-                         for configuration in sfc.configurations
-                         if index in configuration.computing_resource) <= info['computing_resource'], "CR_{}".format(
-            index)
+    with TicToc("SBJ CP"):
+        for index, info in model.topo.nodes.data():
+            problem += lpSum(configuration.var * configuration.computing_resource[index]
+                             for sfc in model.sfc_list
+                             for configuration in sfc.configurations
+                             if index in configuration.computing_resource) <= info['computing_resource'], "CR_{}".format(index)
 
     # throughput constraints
-    print(", Throughput")
-    for start, end, info in model.topo.edges.data():
-        problem += lpSum(configuration.var * sfc.throughput * configuration.edges[(start, end)]
-                         for sfc in model.sfc_list
-                         for configuration in sfc.configurations
-                         if (start, end) in configuration.edges) <= info['bandwidth'], "TP_{}_{}".format(start, end)
+    with TicToc("SBJ TP"):
+        for start, end, info in model.topo.edges.data():
+            problem += lpSum(configuration.var * sfc.throughput * configuration.edges[(start, end)]
+                             for sfc in model.sfc_list
+                             for configuration in sfc.configurations
+                             if (start, end) in configuration.edges) <= info['bandwidth'], "TP_{}_{}".format(start, end)
 
-    # Problem solving
-    print(">> Problem Solving...")
-    problem.solve()
+    with TicToc("LP Solving"):
+        problem.solve()
 
     # reduce the configurations for each sfc
     for sfc in model.sfc_list:
-        sfc.configurations = list(filter(lambda c: c.var.varValue > 0, sfc.configurations))
+        sfc.configurations = list(
+            filter(lambda c: c.var.varValue > 0, sfc.configurations))
 
     obj_val = value(problem.objective)
-    accept_sfc_number = sum(len(sfc.configurations) > 0 for sfc in model.sfc_list)
+    accept_sfc_number = sum(len(sfc.configurations) >
+                            0 for sfc in model.sfc_list)
     latency = 0
     if accept_sfc_number is not 0:
         latency = sum(
             configuration.get_latency() * configuration.var.varValue for sfc in model.sfc_list for configuration in
             sfc.configurations) / accept_sfc_number
-    print("Objective Value: {}({}, {}ms)".format(obj_val, accept_sfc_number, latency))
+    print("Objective Value: {}({}, {}ms)".format(
+        obj_val, accept_sfc_number, latency))
 
     return obj_val, accept_sfc_number, latency, model.compute_resource_utilization()
 
@@ -87,25 +98,42 @@ def linear_programming(model: Model) -> (float, int, float, float):
 def rounding_one(model: Model):
     """
     Rounding method: x < 1.0 => x = 0
-                     x = 1.0 => x = 1.0
+                     x == 1.0 => x = 1.0
     :param model:
     :return:
     """
     print(">> One Rounding <<")
 
-    sfc_list = list(filter(lambda s: len(s.configurations) > 0, model.sfc_list))
+    sfc_list = list(filter(lambda s: len(
+        s.configurations) > 0, model.sfc_list))
 
     for sfc in sfc_list:
         for configuration in sfc.configurations:
             if configuration.var.varValue == 1:
                 sfc.accepted_configuration = configuration
+                if not evaluate(model):
+                    sfc.accepted_configuration = None
+                break
+
+    if not model.get_accepted_sfc_list():
+        rounding_greedy(model)
+        # rounding_randomized(model)
+
+
+def rounding_randomized(model: Model):
+    print(">> Randomized Rounding <<")
+    sfc_list = list(filter(lambda s: len(
+        s.configurations) > 0, model.sfc_list))
+
+    for sfc in sfc_list:
+        for configuration in sfc.configurations:
+            prob = random.random()
+            if prob < configuration.var.varValue:
+                sfc.accepted_configuration = configuration
                 if evaluate(model):
                     break
                 else:
                     sfc.accepted_configuration = None
-
-    if not model.get_accepted_sfc_list():
-        rounding_greedy(model)
 
 
 def rounding_greedy(model: Model):
@@ -118,13 +146,16 @@ def rounding_greedy(model: Model):
     :return:
     """
     print(">> Greedy Rounding <<")
-    sfc_list = list(filter(lambda s: len(s.configurations) > 0, model.sfc_list))
+    sfc_list = list(filter(lambda s: len(
+        s.configurations) > 0, model.sfc_list))
 
     for sfc in sfc_list:
-        sfc.configurations.sort(key=lambda c: c.var.varValue, reverse=True)  # varValue, latency, cr ratio
+        # varValue, latency, cr ratio
+        sfc.configurations.sort(key=lambda c: c.var.varValue, reverse=True)
 
     # sfc sorted by computing resource ratio
-    sfc_list.sort(key=lambda s: s.configurations[0].computing_resource_ratio(model.topo))
+    sfc_list.sort(
+        key=lambda s: s.configurations[0].computing_resource_ratio(model.topo))
 
     for sfc in sfc_list:
         for configuration in sfc.configurations:
@@ -138,6 +169,7 @@ def rounding_greedy(model: Model):
         greedy_dc(model)
 
 
+# recursively
 def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (float, int, float, float):
     print("\n>>> Start Rounding <<<")
 
@@ -145,7 +177,8 @@ def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (floa
 
     accepted_sfc_list = model.get_accepted_sfc_list()
 
-    sub_model = Model(copy.deepcopy(model.topo), [sfc for sfc in model.sfc_list if sfc.accepted_configuration is None])
+    sub_model = Model(copy.deepcopy(model.topo), [
+                      sfc for sfc in model.sfc_list if sfc.accepted_configuration is None])
     # computing resource reduction
     for index, info in sub_model.topo.nodes.data():
         info['computing_resource'] -= sum(sfc.accepted_configuration.computing_resource[index]
@@ -161,15 +194,21 @@ def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (floa
         linear_programming(sub_model)
         rounding_to_integral(sub_model, rounding_method)
 
-    obj_val = objective_value(model, EPSILON)
+    obj_val = objective_value(model)
     accept_sfc_number = len(model.get_accepted_sfc_list())
     latency = average_latency(model)
-    print("Objective Value: {} ({}, {}, {})".format(obj_val, evaluate(model), accept_sfc_number, latency))
+    print("Objective Value: {} ({}, {}, {})".format(
+        obj_val, evaluate(model), accept_sfc_number, latency))
 
     return obj_val, accept_sfc_number, latency, model.compute_resource_utilization()
 
 
+def rorp(model: Model):
+    return rounding_to_integral(model, rounding_one)
+
+
 # Greedy
+# remove configuration from topo
 def is_configuration_valid(topo, sfc, configuration):
     if sfc.latency < configuration.get_latency():
         return False
@@ -195,9 +234,10 @@ def greedy(model: Model) -> (float, int, float):
     """
     Greedy thought:
         Sort sfcs by its computing resources consumption in the increasing order
-        For every sfc, sort each available configuration by its latency in the increasing order
+        For each sfc, sort each available configuration by its latency in the increasing order
         Find the first path whose resources can fulfill the requirement of sfc
         If no available path is found, reject the sfc!
+    Drawback: too slow
     """
     print("\n>>> Greedy Start <<<")
 
@@ -215,21 +255,23 @@ def greedy(model: Model) -> (float, int, float):
             if is_configuration_valid(topo, sfc, configuration):
                 sfc.accepted_configuration = configuration
                 break
-        print("\r>> You have finished {}/{} sfcs' placements".format(idx + 1, len(sfcs)), end='')
+        print("\r>> You have finished {}/{} sfcs' placements".format(idx +
+                                                                     1, len(sfcs)), end='')
 
-    obj_val = objective_value(model, EPSILON)
+    obj_val = objective_value(model)
     accept_sfc_number = len(model.get_accepted_sfc_list())
     latency = average_latency(model)
-    print("\nObjective Value: {} ({}, {}, {})".format(obj_val, evaluate(model), accept_sfc_number, latency))
+    print("\nObjective Value: {} ({}, {}, {})".format(
+        obj_val, evaluate(model), accept_sfc_number, latency))
     return obj_val, accept_sfc_number, latency
 
 
-def greedy2(model: Model) -> (float, int, float):
+def greedy_v2(model: Model) -> (float, int, float):
     """
     Greedy thought:
-        Sort sfcs by its computing resources and bandwidth consumption in the increasing order
-        For every sfc, sort each available configuration by its latency in the increasing order
-        Find the first path whose resources can fulfill the requirement of sfc
+        Sort sfcs by its computing resources and bandwidth consumption in the increasing order. 
+        For each sfc, sort each available configuration by its latency in the increasing order. 
+        Find the first path whose resources can fulfill the requirement of sfc. 
         If no available path is found, reject the sfc!
     """
     print("\n>>> Greedy Start <<<")
@@ -252,22 +294,25 @@ def greedy2(model: Model) -> (float, int, float):
             if is_configuration_valid(topo, sfc, configuration):
                 sfc.accepted_configuration = configuration
                 break
-        print("\r>> You have finished {}/{} sfcs' placements".format(idx + 1, len(sfcs)), end='')
+        print("\r>> You have finished {}/{} sfcs' placements".format(idx +
+                                                                     1, len(sfcs)), end='')
 
-    obj_val = objective_value(model, EPSILON)
+    obj_val = objective_value(model)
     accept_sfc_number = len(model.get_accepted_sfc_list())
     latency = average_latency(model)
-    print("\nObjective Value: {} ({}, {}, {})".format(obj_val, evaluate(model), accept_sfc_number, latency))
+    print("\nObjective Value: {} ({}, {}, {})".format(
+        obj_val, evaluate(model), accept_sfc_number, latency))
     return obj_val, accept_sfc_number, latency
 
 
 def greedy_dc(model: Model) -> (float, int, float, float):
     """
     Greedy thought:
-        Sort sfcs by its computing resources consumption in the increasing order
-        For every sfc, sort each available configuration by its latency in the increasing order
-        Find the first path whose resources can fulfill the requirement of sfc
-        If no available path is found, reject the sfc!
+        Sort sfcs by its computing resources consumption in the increasing
+        order. For every sfc, sort each available configuration by its
+        latency in the increasing order. Find the first path whose resources
+        can fulfill the requirement of sfc. If no available path is found,
+        reject the sfc!
     """
     print("\n>>> Greedy Start <<<")
 
@@ -279,15 +324,84 @@ def greedy_dc(model: Model) -> (float, int, float, float):
         configuration = generate_configuration_greedy_dc_dfs(topo, sfc)
         if configuration and is_configuration_valid(topo, sfc, configuration):
             sfc.accepted_configuration = configuration
-        print("\r>> You have finished {}/{} sfcs' placements".format(idx + 1, len(sfcs)), end='')
+        print("\r>> You have finished {}/{} sfcs' placements".format(idx +
+                                                                     1, len(sfcs)), end='')
 
-    obj_val = objective_value(model, EPSILON)
+    obj_val = objective_value(model)
     accept_sfc_number = len(model.get_accepted_sfc_list())
     latency = average_latency(model)
-    print("\nObjective Value: {} ({}, {}, {})".format(obj_val, evaluate(model), accept_sfc_number, latency))
+    print("\nObjective Value: {} ({}, {}, {})".format(
+        obj_val, evaluate(model), accept_sfc_number, latency))
     return obj_val, accept_sfc_number, latency, model.compute_resource_utilization()
 
 
+def greedy_para(model: Model):
+    """
+        1. Sort SFCs by its computing resources in the ascending order. 
+        2. For every sfc, compute its merged chain.
+        3. Permute the servers to find a route and place the merged chain.
+        3. Find the first path whose resources can fulfill the requirement of sfc. 
+        4. If so, accept the configuraiton
+        5. Otherwise, try to find the path for the origin sfc 
+        6. If so, accept the configuraiton
+        7. Otherwise, refuse the sfc
+    """
+    topo = copy.deepcopy(model.topo)
+    sfcs = model.sfc_list
+    sfcs.sort(key=lambda x: x.computing_resources_sum)
+
+    with PixelBar("SFC placement") as bar:
+        bar.max = len(sfcs)
+        for idx, sfc in enumerate(sfcs):
+            # create optimal sfc
+            _, para_strategy = sfc.para_analysis()
+            cur_vnf = sfc.vnf_list[0]
+            optimal_sfc = copy.deepcopy(sfc)
+            optimal_sfc.vnf_list = []
+            for i in len(para_strategy):
+                vnf = sfc.vnf_list[i + 1]
+                if para_strategy[i] == 1:
+                    cur_vnf = VNF(max(cur_vnf.latency, vnf.latency),
+                                  cur_vnf.computing_resource + vnf.computing_resource,
+                                  set.union(cur_vnf.read_fields,
+                                            vnf.read_fields),
+                                  set.union(cur_vnf.write_fields, vnf.write_fields))
+                elif para_strategy[i] == 0:
+                    optimal_sfc.vnf_list.append(cur_vnf)
+                    cur_vnf = vnf
+            optimal_sfc.vnf_list.append(cur_vnf)
+
+            optimal_configuration = generate_configuration_greedy_dc_dfs(
+                topo, optimal_sfc)
+            if optimal_configuration and is_configuration_valid(topo, optimal_sfc, optimal_configuration):
+                merged_vnf_index = 0
+                place = [optimal_configuration.place[0]]
+                for para in para_strategy:
+                    if para == 0:
+                        merged_vnf_index += 1
+                    place.append(optimal_configuration.place[merged_vnf_index])
+                origin_configuration = Configuration(
+                    sfc, optimal_configuration.route, place, optimal_configuration.route_latency, optimal_configuration.idx)
+                
+                if is_configuration_valid(topo, sfc, origin_configuration):
+                    sfc.accepted_configuration = origin_configuration
+                    continue
+
+            configuration = generate_configuration_greedy_dc_dfs(topo, sfc)
+            if configuration and is_configuration_valid(topo, sfc, configuration):
+                sfc.accepted_configuration = configuration
+
+            bar.next
+
+    obj_val = objective_value(model)
+    accept_sfc_number = len(model.get_accepted_sfc_list())
+    latency = average_latency(model)
+    print("\nObjective Value: {} ({}, {}, {})".format(
+        obj_val, evaluate(model), accept_sfc_number, latency))
+    return obj_val, accept_sfc_number, latency, model.compute_resource_utilization()
+
 # genetic algorithm (not necessary)
+
+
 def ga(model: Model):
     pass

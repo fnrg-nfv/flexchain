@@ -93,7 +93,6 @@ def _generate_routes_by_permutation(topo: nx.Graph, server_permutation, sfc: SFC
     return route, latency
 
 
-# deprecated
 def _generate_configurations_dc_by_server(topo: nx.Graph, sfc: SFC):
     """
     Generate Configurations:
@@ -117,9 +116,9 @@ def _generate_configurations_dc_by_server(topo: nx.Graph, sfc: SFC):
         return routes
 
     route_idx = 0
-    print(":{} ".format(len(sfc.vnf_list)), end="")
+    # print(":{} ".format(len(sfc.vnf_list)), end="")
     for i in range(1, len(sfc.vnf_list) + 1):
-        print("-{}({}) ".format(i, len(configurations)), end="")
+        # print("-{}({}) ".format(i, len(configurations)), end="")
         for server_permutation in itertools.permutations(servers, i):
             server_permutation = list(server_permutation)
 
@@ -294,7 +293,7 @@ def generate_configuration_greedy_dc_dfs(topo: nx.Graph, sfc: SFC, deep: int = 1
         sfc_min_usage = sfc.computing_resources_sum
     servers = [node for node in topo.nodes if topo.nodes[node]['computing_resource'] >= sfc_min_usage]
     shortest_distances = _dijkstra(topo, s)
-    servers.sort(key=lambda server1: (shortest_distances[server1], -topo.nodes[server1]['computing_resource']))
+    servers.sort(key=lambda s: (shortest_distances[s], -topo.nodes[s]['computing_resource']))
 
     if len(servers) > deep:
         servers = servers[:deep]

@@ -1,4 +1,5 @@
 import heapq
+import sys
 import pickle
 import random
 import string
@@ -8,7 +9,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 import para_placement.config as config
-from para_placement.config import NF_CONFIG, SFC_CONFIG
+from para_placement.config import SFC_CONFIG
 from para_placement.helper import pairwise
 
 
@@ -34,7 +35,7 @@ class VNF(BaseObject):
     @staticmethod
     def parallelizable_analysis(vnf1, vnf2):
         """Analysis whether two vnf can execute parallelism.
-        
+
         Returns:
         0 for packet copy
         1 for no need packet copy
@@ -76,7 +77,8 @@ class SFC(BaseObject):
         self.idx = idx
 
         self.latency_sum: float = sum(vnf.latency for vnf in vnf_list)
-        self.computing_resources_sum: int = sum(vnf.computing_resource for vnf in vnf_list)
+        self.computing_resources_sum: int = sum(
+            vnf.computing_resource for vnf in vnf_list)
 
         self.accepted_configuration: Configuration = None
         self.configurations: List[Configuration] = []
@@ -91,12 +93,14 @@ class Model(BaseObject):
         self.sfc_list = sfc_list
 
     def __str__(self):
-        return "<{}>\tPara: {}\tOne M: {}\tnodes: {}\tedges: {}\tSFCs: {}".format(self.topo.name,
-                                                                                  Configuration.para,
-                                                                                  config.ONE_MACHINE,
-                                                                                  len(self.topo.nodes),
-                                                                                  len(self.topo.edges),
-                                                                                  len(self.sfc_list))
+        return "<{}>\tPara: {}\tOne Machine: {}\tnodes: {}\tedges: {}\tSFCs: {}".format(self.topo.name,
+                                                                                        Configuration.para,
+                                                                                        config.ONE_MACHINE,
+                                                                                        len(
+                                                                                            self.topo.nodes),
+                                                                                        len(
+                                                                                            self.topo.edges),
+                                                                                        len(self.sfc_list))
 
     def save(self, filename='model_data.pkl'):
         with open(filename, 'wb') as output:
@@ -127,7 +131,8 @@ class Model(BaseObject):
     def output_accepted_configuration(self, filename="ilp_result.txt"):
         with open(filename, "w+") as output:
             for sfc in self.get_accepted_sfc_list():
-                output.write("C {}\t{}\n".format(sfc.accepted_configuration.name, sfc.accepted_configuration))
+                output.write("C {}\t{}\n".format(
+                    sfc.accepted_configuration.name, sfc.accepted_configuration))
             output.close()
 
     def output_configurations(self, filename="lp_result.txt"):
@@ -165,25 +170,27 @@ class Model(BaseObject):
             edge = (start, end)
             for sfc in accepted_sfc_list:
                 if edge in sfc.accepted_configuration.edges:
-                    consumption += sfc.accepted_configuration.edges[edge] * sfc.throughput
+                    consumption += sfc.accepted_configuration.edges[edge] * \
+                        sfc.throughput
             print(edge, "{}/{}".format(consumption, self.topo.edges.get(edge)['bandwidth']),
                   "{:.2f}%".format(consumption / self.topo.edges.get(edge)['bandwidth'] * 100))
 
     def compute_resource_utilization(self):
         accepted_sfc_list = self.get_accepted_sfc_list()
         usage = sum(sfc.computing_resources_sum for sfc in accepted_sfc_list)
-        capacity = sum(self.topo.nodes[node]['computing_resource'] for node in self.topo.nodes)
+        capacity = sum(self.topo.nodes[node]['computing_resource']
+                       for node in self.topo.nodes)
         return usage / capacity
 
 
+# TODO: readable fields and writeable fields should be weighted or sth else.
 def generate_vnf_set(size: int = 30) -> List[VNF]:
     vnf_list = []
     readable_fields = {0, 1, 2, 3, 4}
     writeable_fields = {0, 1, 2, 3, 4}
     for i in range(size):
-        latency = random.uniform(NF_CONFIG['LT_LO'], NF_CONFIG['LT_HI'])
-        # latency = random.uniform(0.045, 0.3)
-        computing_resource = random.randint(NF_CONFIG['CPU_LO'], NF_CONFIG['CPU_HI'])
+        latency = SFC_CONFIG.vnf_latency()
+        computing_resource = SFC_CONFIG.vnf_cpu()
         read_fields = set()
         for item in readable_fields:
             if random.choice([True, False, False]):
@@ -192,7 +199,8 @@ def generate_vnf_set(size: int = 30) -> List[VNF]:
         for item in writeable_fields:
             if random.choice([True, False, False]):
                 write_fields.add(item)
-        vnf_list.append(VNF(latency, computing_resource, read_fields, write_fields))
+        vnf_list.append(VNF(latency, computing_resource,
+                            read_fields, write_fields))
     return vnf_list
 
 
@@ -206,7 +214,7 @@ def generate_vnf_set(size: int = 30) -> List[VNF]:
 def generate_sfc_list_old(topo: nx.Graph, vnf_set: List[VNF], size=100, base_idx=0):
     ret = []
     for i in range(size):
-        n = random.randint(SFC_CONFIG['VNF_LO'], SFC_CONFIG['VNF_HI'])
+        n = SFC_CONFIG.size()
         vnf_list = []
         for j in range(n):
             vnf_list.append(random.choice(vnf_set))
@@ -214,27 +222,26 @@ def generate_sfc_list_old(topo: nx.Graph, vnf_set: List[VNF], size=100, base_idx
         s = random.choice(nodes)
         nodes.remove(s)
         d = random.choice(nodes)
-        ret.append(SFC(vnf_list, latency=random.uniform(SFC_CONFIG['LT_LO'], SFC_CONFIG['LT_HI']),
-                       throughput=random.randint(SFC_CONFIG['TP_LO'], SFC_CONFIG['TP_HI']), s=s, d=d,
-                       idx=i + base_idx))
+        ret.append(SFC(vnf_list, latency=SFC_CONFIG.r_latency(),
+                       throughput=SFC_CONFIG.r_throughput(), s=s, d=d, idx=i + base_idx))
     return ret
 
 
 def generate_sfc_list2(topo: nx.Graph, vnf_set: List[VNF], size=100, base_idx=0):
     ret = []
     for i in range(size):
-        n = random.randint(SFC_CONFIG['VNF_LO'], SFC_CONFIG['VNF_HI'])
+        n = SFC_CONFIG.size()
         vnf_list = []
         for j in range(n):
             vnf_list.append(random.choice(vnf_set))
 
         # switches = [s for s in topo.nodes if topo.nodes[s]['computing_resource'] == 0]
-        top_switches = [s for s in topo.nodes if 'Core' in s or 'L1' in s or 'Layer 1' in s or 'Intermediate' in s]
+        top_switches = [
+            s for s in topo.nodes if 'Core' in s or 'L1' in s or 'Layer 1' in s or 'Intermediate' in s]
         s = random.choice(top_switches)
         d = random.choice(top_switches)
-        ret.append(SFC(vnf_list, latency=random.uniform(SFC_CONFIG['LT_LO'], SFC_CONFIG['LT_HI']),
-                       throughput=random.randint(SFC_CONFIG['TP_LO'], SFC_CONFIG['TP_HI']), s=s, d=d,
-                       idx=i + base_idx))
+        ret.append(SFC(vnf_list, latency=SFC_CONFIG.r_latency(),
+                       throughput=SFC_CONFIG.r_throughput(), s=s, d=d, idx=i + base_idx))
     return ret
 
 
@@ -244,6 +251,7 @@ class Configuration(BaseObject):
         self.route = route
         self.place = place
         self.route_latency = route_latency
+        self.idx = idx
         self.name = "{}_{}".format(sfc.idx, idx)
 
         # computing resource
@@ -274,17 +282,19 @@ class Configuration(BaseObject):
     # latency (normal & para)
     def get_latency(self) -> float:
         if Configuration.para:
-            return self.route_latency + self.para_latency_analysis()
+            processing_latency, _ = self.para_analysis()
+            return self.route_latency + processing_latency
         return self.route_latency + self.sfc.latency_sum
 
     # get the max resource usage ratio
     def computing_resource_ratio(self, topo: nx.Graph) -> float:
         ret = 0
         for pos in self.computing_resource:
-            ret = max(self.computing_resource[pos] / topo.nodes.data()[pos]['computing_resource'], ret)
+            ret = max(
+                self.computing_resource[pos] / topo.nodes.data()[pos]['computing_resource'], ret)
         return ret
 
-    def para_latency_analysis(self) -> float:
+    def para_analysis(self):
         """
         Get the optimal parallel execution situation using backtracking
         """
@@ -314,13 +324,14 @@ class Configuration(BaseObject):
         sub_chain_latency = self.sfc.vnf_list[0].latency
         for i in range(len(optimal_para)):
             if optimal_para[i] == 1:
-                sub_chain_latency = max(sub_chain_latency, self.sfc.vnf_list[i + 1].latency)
+                sub_chain_latency = max(
+                    sub_chain_latency, self.sfc.vnf_list[i + 1].latency)
             else:
                 total_latency += sub_chain_latency
                 sub_chain_latency = self.sfc.vnf_list[i + 1].latency
         total_latency += sub_chain_latency
 
-        return total_latency
+        return total_latency, optimal_para
 
     def backtracking_analysis(self, index, vnfs, analysis_result, result):
         """
@@ -367,6 +378,56 @@ class Configuration(BaseObject):
         # find the shortest distance to every point
 
 
+class ParaBackTracking:
+    def __init__(self):
+        self.opt_latency = sys.maxsize
+
+    # analysis_result => cur_result
+    def backtracking_analysis(self, index, vnfs, analysis_result, result):
+        """
+        for vnf in vnfs, find the optimal parallelism situation and save result in result.
+        len(result) = len(vnfs) - 1
+        result[i] indicates vnfs[i] and vnfs[i+1] whether execute parallelism. 0 for no, 1 for yes
+        """
+        if index == len(vnfs) - 1:
+            # analysis end, compute latency
+            latency = sum(vnf.latency for vnf in vnfs)
+            if latency < self.opt_latency:
+                # find a better situation
+                self.opt_latency = latency
+                result.clear()
+                result.extend(analysis_result)
+            return
+
+        # parallelizable
+        if VNF.parallelizable_analysis(vnfs[index], vnfs[index + 1]) >= 0:
+            # branch 1
+            vnf1 = vnfs.pop(index)
+            vnf2 = vnfs.pop(index)
+            new_vnf = VNF(max(vnf1.latency, vnf2.latency),
+                          vnf1.computing_resource + vnf2.computing_resource,
+                          set.union(vnf1.read_fields, vnf2.read_fields),
+                          set.union(vnf1.write_fields, vnf2.write_fields))
+            vnfs.insert(index, new_vnf)
+            analysis_result.append(1)
+            self.backtracking_analysis(index, vnfs, analysis_result, result)
+
+            # branch 2
+            vnfs.pop(index)
+            vnfs.insert(index, vnf2)
+            vnfs.insert(index, vnf1)
+            analysis_result.pop()
+            analysis_result.append(0)
+            self.backtracking_analysis(
+                index + 1, vnfs, analysis_result, result)
+            analysis_result.pop()
+        else:
+            analysis_result.append(0)
+            self.backtracking_analysis(
+                index + 1, vnfs, analysis_result, result)
+            analysis_result.pop()
+
+
 def _dijkstra(topo: nx.Graph, s) -> {}:
     ret = {}
     heap = [(0, s)]
@@ -400,7 +461,8 @@ def _generate_route_list(topo: nx.Graph, sfc: SFC):
     while stack:
         route, latency = stack.pop()
 
-        if latency + shortest_distance[route[-1]] > sfc.latency:  # partial latency constraints
+        # partial latency constraints
+        if latency + shortest_distance[route[-1]] > sfc.latency:
             continue
 
         if route[-1] == d:
@@ -408,7 +470,8 @@ def _generate_route_list(topo: nx.Graph, sfc: SFC):
                 route_list.append((route, latency))
         else:
             adjacent = topo[route[-1]]
-            servers = [s for s in route if topo.nodes[s]['computing_resource'] > 0]
+            servers = [s for s in route if topo.nodes[s]
+                       ['computing_resource'] > 0]
             for index in adjacent:
                 if index in servers:
                     continue
@@ -441,7 +504,8 @@ def _generate_configurations_for_one_route(topo: nx.Graph, route: List[int], rou
                 new_placement = cur[:]
                 new_placement.append(i)
 
-                vnf_index = len(new_placement) - 1 - 1  # first 0 should be ignored
+                vnf_index = len(new_placement) - 1 - \
+                    1  # first 0 should be ignored
                 node_capacity = topo.nodes[route[i]]['computing_resource']
                 usage = sfc.vnf_list[vnf_index].computing_resource
                 while vnf_index > 0 and new_placement[vnf_index] == new_placement[vnf_index - 1]:
@@ -452,7 +516,8 @@ def _generate_configurations_for_one_route(topo: nx.Graph, route: List[int], rou
 
     configuration_set = []
     for idx, placement in enumerate(placement_set):
-        configuration_set.append(Configuration(sfc, route, placement, route_latency, "{}_{}".format(route_idx, idx)))
+        configuration_set.append(Configuration(
+            sfc, route, placement, route_latency, "{}_{}".format(route_idx, idx)))
     return configuration_set
 
 
@@ -465,6 +530,7 @@ def generate_configurations_for_one_sfc(topo: nx.Graph, sfc: SFC) -> List[Config
     configurations = []
     for idx, item in enumerate(route_list):
         route, latency = item
-        configurations.extend(_generate_configurations_for_one_route(topo, route, latency, sfc, idx))
+        configurations.extend(_generate_configurations_for_one_route(
+            topo, route, latency, sfc, idx))
 
     return configurations

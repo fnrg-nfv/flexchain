@@ -28,12 +28,8 @@ def evaluate(model: Model) -> bool:
     return True
 
 
-def objective_value(model: Model, epsilon: float) -> float:
-    accepted_sfc_list = model.get_accepted_sfc_list()
-    objective = len(accepted_sfc_list) - epsilon * sum(
-        sfc.accepted_configuration.get_latency() for sfc in accepted_sfc_list)
-
-    return objective
+def objective_value(model: Model) -> float:
+    return len(model.get_accepted_sfc_list())
 
 
 def average_latency(model: Model) -> float:
