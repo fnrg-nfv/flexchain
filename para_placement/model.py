@@ -33,6 +33,14 @@ class VNF(BaseObject):
         return "(%f, %d, %s, %s)" % (self.latency, self.computing_resource, self.read_fields, self.write_fields)
 
     @staticmethod
+    def para_merge(vnf1, vnf2):
+        merged = VNF(max(vnf1.latency, vnf2.latency),
+                     vnf1.computing_resource + vnf2.computing_resource,
+                     set.union(vnf1.read_fields, vnf2.read_fields),
+                     set.union(vnf2.write_fields, vnf2.write_fields))
+        return merged
+
+    @staticmethod
     def parallelizable_analysis(vnf1, vnf2):
         """Analysis whether two vnf can execute parallelism.
 
@@ -378,54 +386,46 @@ class Configuration(BaseObject):
         # find the shortest distance to every point
 
 
-class ParaBackTracking:
-    def __init__(self):
+class ParaAnalyzer:
+    def __init__(self, vnf_list):
         self.opt_latency = sys.maxsize
+        self.opt_strategy = []
+        self.opt_vnf_list= []
+        self._backtracing(0, vnf_list, [])
 
-    # analysis_result => cur_result
-    def backtracking_analysis(self, index, vnfs, analysis_result, result):
+    def _backtracing(self, index, vnf_list, strategy):
         """
         for vnf in vnfs, find the optimal parallelism situation and save result in result.
         len(result) = len(vnfs) - 1
         result[i] indicates vnfs[i] and vnfs[i+1] whether execute parallelism. 0 for no, 1 for yes
         """
-        if index == len(vnfs) - 1:
-            # analysis end, compute latency
-            latency = sum(vnf.latency for vnf in vnfs)
+        if index >= len(vnf_list) - 1:
+            # end
+            latency = sum(vnf.latency for vnf in vnf_list)
             if latency < self.opt_latency:
-                # find a better situation
                 self.opt_latency = latency
-                result.clear()
-                result.extend(analysis_result)
-            return
-
-        # parallelizable
-        if VNF.parallelizable_analysis(vnfs[index], vnfs[index + 1]) >= 0:
-            # branch 1
-            vnf1 = vnfs.pop(index)
-            vnf2 = vnfs.pop(index)
-            new_vnf = VNF(max(vnf1.latency, vnf2.latency),
-                          vnf1.computing_resource + vnf2.computing_resource,
-                          set.union(vnf1.read_fields, vnf2.read_fields),
-                          set.union(vnf1.write_fields, vnf2.write_fields))
-            vnfs.insert(index, new_vnf)
-            analysis_result.append(1)
-            self.backtracking_analysis(index, vnfs, analysis_result, result)
+                self.opt_strategy = strategy[:]
+                self.opt_vnf_list = vnf_list[:]
+        else:
+            # parallelizable
+            if VNF.parallelizable_analysis(vnf_list[index], vnf_list[index + 1]) >= 0:
+                # branch 1
+                vnf1 = vnf_list.pop(index)
+                vnf2 = vnf_list.pop(index)
+                new_vnf = VNF.para_merge(vnf1, vnf2)
+                vnf_list.insert(index, new_vnf)
+                strategy.append(1)
+                self._backtracing(index, vnf_list, strategy)
+                vnf_list.pop(index)
+                vnf_list.insert(index, vnf2)
+                vnf_list.insert(index, vnf1)
+                strategy.pop()
 
             # branch 2
-            vnfs.pop(index)
-            vnfs.insert(index, vnf2)
-            vnfs.insert(index, vnf1)
-            analysis_result.pop()
-            analysis_result.append(0)
-            self.backtracking_analysis(
-                index + 1, vnfs, analysis_result, result)
-            analysis_result.pop()
-        else:
-            analysis_result.append(0)
-            self.backtracking_analysis(
-                index + 1, vnfs, analysis_result, result)
-            analysis_result.pop()
+            strategy.append(0)
+            self._backtracing(
+                index + 1, vnf_list, strategy)
+            strategy.pop()
 
 
 def _dijkstra(topo: nx.Graph, s) -> {}:

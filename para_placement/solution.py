@@ -353,45 +353,34 @@ def greedy_para(model: Model):
     with PixelBar("SFC placement") as bar:
         bar.max = len(sfcs)
         for idx, sfc in enumerate(sfcs):
-            # create optimal sfc
-            _, para_strategy = sfc.para_analysis()
-            cur_vnf = sfc.vnf_list[0]
+            # generate optimal sfc
+            pa = ParaAnalyzer(sfc.vnf_list)
             optimal_sfc = copy.deepcopy(sfc)
-            optimal_sfc.vnf_list = []
-            for i in len(para_strategy):
-                vnf = sfc.vnf_list[i + 1]
-                if para_strategy[i] == 1:
-                    cur_vnf = VNF(max(cur_vnf.latency, vnf.latency),
-                                  cur_vnf.computing_resource + vnf.computing_resource,
-                                  set.union(cur_vnf.read_fields,
-                                            vnf.read_fields),
-                                  set.union(cur_vnf.write_fields, vnf.write_fields))
-                elif para_strategy[i] == 0:
-                    optimal_sfc.vnf_list.append(cur_vnf)
-                    cur_vnf = vnf
-            optimal_sfc.vnf_list.append(cur_vnf)
+            optimal_sfc.vnf_list = pa.opt_vnf_list
 
-            optimal_configuration = generate_configuration_greedy_dc_dfs(
+            optimal_config = generate_configuration_greedy_dc_dfs(
                 topo, optimal_sfc)
-            if optimal_configuration and is_configuration_valid(topo, optimal_sfc, optimal_configuration):
+            if optimal_config:
+                # generate origin "place" from merge "place"
                 merged_vnf_index = 0
-                place = [optimal_configuration.place[0]]
-                for para in para_strategy:
+                place = [optimal_config.place[0]]
+                for para in pa.opt_strategy:
                     if para == 0:
                         merged_vnf_index += 1
-                    place.append(optimal_configuration.place[merged_vnf_index])
-                origin_configuration = Configuration(
-                    sfc, optimal_configuration.route, place, optimal_configuration.route_latency, optimal_configuration.idx)
-                
-                if is_configuration_valid(topo, sfc, origin_configuration):
-                    sfc.accepted_configuration = origin_configuration
+                    place.append(optimal_config.place[merged_vnf_index])
+
+                configuration = Configuration(
+                    sfc, optimal_config.route, place, optimal_config.route_latency, optimal_config.idx)
+                if is_configuration_valid(topo, sfc, configuration):
+                    sfc.accepted_configuration = configuration
+                    bar.next()
                     continue
 
             configuration = generate_configuration_greedy_dc_dfs(topo, sfc)
             if configuration and is_configuration_valid(topo, sfc, configuration):
                 sfc.accepted_configuration = configuration
 
-            bar.next
+            bar.next()
 
     obj_val = objective_value(model)
     accept_sfc_number = len(model.get_accepted_sfc_list())

@@ -11,7 +11,7 @@ def single_test_rorp():
     topo = topology.vl2_topo(port_num_of_aggregation_switch=6, port_num_of_tor_for_server=4)
     vnf_set = generate_vnf_set(size=30)
 
-    model = Model(topo, generate_sfc_list2(topo=topo, vnf_set=vnf_set, size=200, base_idx=0))
+    model = Model(topo, generate_sfc_list2(topo=topo, vnf_set=vnf_set, size=100, base_idx=0))
     model.draw_topo()
 
     # optimal = linear_programming(model)
@@ -19,6 +19,7 @@ def single_test_rorp():
 
     # model.clear()
     greedy_result = greedy_para(model)
+    greedy_result = greedy_dc(model)
 
 
 def main():
