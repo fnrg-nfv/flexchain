@@ -4,39 +4,44 @@ from para_placement import topology
 from para_placement.helper import *
 from para_placement.solution import *
 
+
 def single_test_rorp():
     Configuration.para = True
     config.DC_CHOOSING_SERVER = True
 
-    topo = topology.vl2_topo(port_num_of_aggregation_switch=8, port_num_of_tor_for_server=6)
+    topo = topology.vl2_topo(
+        port_num_of_aggregation_switch=8, port_num_of_tor_for_server=6)
     vnf_set = generate_vnf_set(size=30)
 
-    model = Model(topo, generate_sfc_list2(topo=topo, vnf_set=vnf_set, size=100, base_idx=0))
+    model = Model(topo, generate_sfc_list2(
+        topo=topo, vnf_set=vnf_set, size=100, base_idx=0))
     model.draw_topo()
 
-    result ={}
+    result = {}
 
     optimal = linear_programming(model)
-    result['ILP greedy rounding'] = rounding_to_integral(model, rounding_greedy)
+    result['ILP greedy rounding'] = rounding_to_integral(
+        model, rounding_greedy)
 
     model.clear()
     optimal = linear_programming(model)
     result['RORP'] = rorp(model)
 
     model.clear()
-    result['greedy para']= greedy_para(model)
+    result['greedy para'] = greedy_para(model)
 
     model.clear()
-    result['greedy old']= greedy_dc(model)
+    result['greedy old'] = greedy_dc(model)
 
     print_dict_result(result, model)
+
 
 def print_dict_result(result, model):
     print("\n>>>>>>>>>>>>>>>>>> Result Summary <<<<<<<<<<<<<<<<<<")
     print("{}\n".format(model))
     for key in result:
         print("{}: {}".format(key, result[key]))
-    
+
 
 def main():
     # parameter init
@@ -59,9 +64,11 @@ def main():
     sizes = [unit * i + unit for i in range(iter_times)]
 
     for size in sizes:
-        model = Model(topo, generate_sfc_list2(topo=topo, vnf_set=vnf_set, size=size, base_idx=0))
+        model = Model(topo, generate_sfc_list2(
+            topo=topo, vnf_set=vnf_set, size=size, base_idx=0))
         result[size] = iteration(model)
-        temple_files.append("./results/{}/{}_{}.pkl".format(model.topo.name, size, current_time()))
+        temple_files.append(
+            "./results/{}/{}_{}.pkl".format(model.topo.name, size, current_time()))
         save_obj(result[size], temple_files[-1])
 
     filename = "./results/{}/{}.pkl".format(model.topo.name, current_time())
@@ -82,12 +89,10 @@ def iteration(model: Model):
 
     model.clear()
     ret['optimal'] = linear_programming(model)
-    ret['heuristic'] = rounding_to_integral(model, rounding_method=rounding_one)
+    ret['heuristic'] = rounding_to_integral(
+        model, rounding_method=rounding_one)
 
-    print("\n>>>>>>>>>>>>>>>>>> Result Summary <<<<<<<<<<<<<<<<<<")
-    print("{}\n".format(model))
-    for key in ret:
-        print("{}: {}".format(key, ret[key]))
+    print_dict_result(ret)
 
     return ret
 
@@ -116,15 +121,13 @@ def comparison(model: Model, init_k=4000):
     print("PLACEMENT MAIN")
     ret = dict()
 
-    # model.clear()
-    # ret['greedy'] = greedy_dc(model)
-
     model.clear()
     config.K = init_k
     Configuration.para = True
     config.ONE_MACHINE = False
     linear_programming(model)
-    ret['heuristic'] = rounding_to_integral(model, rounding_method=rounding_one)
+    ret['heuristic'] = rounding_to_integral(
+        model, rounding_method=rounding_one)
 
     model.clear()
     config.K = init_k
@@ -140,10 +143,7 @@ def comparison(model: Model, init_k=4000):
     linear_programming(model)
     ret['PWPOM'] = rounding_to_integral(model, rounding_method=rounding_one)
 
-    print("\n>>>>>>>>>>>>>>>>>> Result Summary <<<<<<<<<<<<<<<<<<")
-    print("{}\n".format(model))
-    for key in ret:
-        print("{}: {}".format(key, ret[key]))
+    print_dict_result(ret)
 
     return ret
 
@@ -165,34 +165,12 @@ def main_compare():
         model.draw_topo()
         result[size] = comparison(model)
 
-        save_obj(result[size], "./results/compare/{}_{}_{}.pkl".format(model.topo.name, size, current_time()))
+        save_obj(result[size], "./results/compare/{}_{}_{}.pkl".format(
+            model.topo.name, size, current_time()))
 
     save_obj(result, "./results/compare/{}_{}.pkl".format(topo.name, current_time()))
 
 
-def main_greedy():
-    for k in [3]:
-        topo = topology.b_cube_topo(k)
-        print(Model(topo, []))
-
-        vnf_set = generate_vnf_set(size=30)
-        sfc_size = len(topo.nodes)
-        model = Model(topo, generate_sfc_list2(topo, vnf_set, sfc_size))
-        # model.draw_topo()
-
-        Configuration.para = True
-        config.DC_CHOOSING_SERVER = False
-
-        model.clear()
-        t1 = time.time()
-        linear_programming(model)
-        rounding_to_integral(model, rounding_method=rounding_one)
-        t2 = time.time() - t1
-        print(t2)
-
-        filename = "heuristic_{}_{}_{}.pkl".format(topo.name, k, current_time())
-        save_obj(t2, filename)
-
-
 if __name__ == '__main__':
-    single_test_rorp()
+    with TicToc("s"):
+        single_test_rorp()

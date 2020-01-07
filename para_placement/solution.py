@@ -5,7 +5,7 @@ from pulp import *
 from para_placement.config import DC
 from para_placement.evaluation import *
 from para_placement.model import *
-from para_placement.cg import generate_configurations_dc, generate_configuration_greedy_dc_dfs
+from para_placement.cg import generate_configurations, generate_configuration_greedy_dfs
 from progress.bar import PixelBar
 from ttictoc import TicToc
 
@@ -18,7 +18,7 @@ def linear_programming(model: Model) -> (float, int, float, float):
     with TicToc("GeneratingConfiguration"), PixelBar(">> Generating configuration set for SFC") as bar:
         bar.max = len(model.sfc_list)
         for idx, sfc in enumerate(model.sfc_list):
-            sfc.configurations = generate_configurations_dc(model.topo, sfc)
+            sfc.configurations = generate_configurations(model.topo, sfc)
 
             # filter configurations whose latency is legal. IMPORTANT
             sfc.configurations = list(
@@ -221,81 +221,6 @@ def is_configuration_valid(topo, sfc, configuration):
     return True
 
 
-def greedy(model: Model) -> (float, int, float):
-    """
-    Greedy thought:
-        Sort sfcs by its computing resources consumption in the increasing order
-        For each sfc, sort each available configuration by its latency in the increasing order
-        Find the first path whose resources can fulfill the requirement of sfc
-        If no available path is found, reject the sfc!
-    Drawback: too slow
-    """
-    print("\n>>> Greedy Start <<<")
-
-    topo = copy.deepcopy(model.topo)
-    sfcs = model.sfc_list
-    sfcs.sort(key=lambda x: x.computing_resources_sum)
-
-    for idx, sfc in enumerate(sfcs):
-        if DC:
-            configurations = generate_configurations_dc(topo, sfc)
-        else:
-            configurations = generate_configurations_for_one_sfc(topo, sfc)
-        configurations.sort(key=lambda x: x.get_latency())
-        for configuration in configurations:
-            if is_configuration_valid(topo, sfc, configuration):
-                sfc.accepted_configuration = configuration
-                break
-        print("\r>> You have finished {}/{} sfcs' placements".format(idx +
-                                                                     1, len(sfcs)), end='')
-
-    obj_val = objective_value(model)
-    accept_sfc_number = len(model.get_accepted_sfc_list())
-    latency = average_latency(model)
-    print("\nObjective Value: {} ({}, {}, {})".format(
-        obj_val, evaluate(model), accept_sfc_number, latency))
-    return obj_val, accept_sfc_number, latency
-
-
-def greedy_v2(model: Model) -> (float, int, float):
-    """
-    Greedy thought:
-        Sort sfcs by its computing resources and bandwidth consumption in the increasing order. 
-        For each sfc, sort each available configuration by its latency in the increasing order. 
-        Find the first path whose resources can fulfill the requirement of sfc. 
-        If no available path is found, reject the sfc!
-    """
-    print("\n>>> Greedy Start <<<")
-
-    topo = copy.deepcopy(model.topo)
-    sfcs = model.sfc_list
-    sfcs.sort(key=lambda x: x.computing_resources_sum)
-
-    for idx, sfc in enumerate(sfcs):
-        sfc.rank = idx
-    sfcs.sort(key=lambda x: x.throughput)
-    for idx, sfc in enumerate(sfcs):
-        sfc.rank += idx
-    sfcs.sort(key=lambda x: x.rank)
-
-    for idx, sfc in enumerate(sfcs):
-        configurations = generate_configurations_for_one_sfc(topo, sfc)
-        configurations.sort(key=lambda x: x.get_latency())
-        for configuration in configurations:
-            if is_configuration_valid(topo, sfc, configuration):
-                sfc.accepted_configuration = configuration
-                break
-        print("\r>> You have finished {}/{} sfcs' placements".format(idx +
-                                                                     1, len(sfcs)), end='')
-
-    obj_val = objective_value(model)
-    accept_sfc_number = len(model.get_accepted_sfc_list())
-    latency = average_latency(model)
-    print("\nObjective Value: {} ({}, {}, {})".format(
-        obj_val, evaluate(model), accept_sfc_number, latency))
-    return obj_val, accept_sfc_number, latency
-
-
 def greedy_dc(model: Model) -> (float, int, float, float):
     """
     Greedy thought:
@@ -312,7 +237,7 @@ def greedy_dc(model: Model) -> (float, int, float, float):
     sfcs.sort(key=lambda x: x.computing_resources_sum)
 
     for idx, sfc in enumerate(sfcs):
-        configuration = generate_configuration_greedy_dc_dfs(topo, sfc)
+        configuration = generate_configuration_greedy_dfs(topo, sfc)
         if configuration and is_configuration_valid(topo, sfc, configuration):
             sfc.accepted_configuration = configuration
         print("\r>> You have finished {}/{} sfcs' placements".format(idx +
@@ -351,7 +276,7 @@ def greedy_para(model: Model):
             optimal_sfc = copy.deepcopy(sfc)
             optimal_sfc.vnf_list = pa.opt_vnf_list
 
-            optimal_config = generate_configuration_greedy_dc_dfs(
+            optimal_config = generate_configuration_greedy_dfs(
                 topo, optimal_sfc)
             if optimal_config and is_configuration_valid(topo, optimal_sfc, optimal_config):
                 # generate origin "place" from merge "place"
@@ -366,7 +291,7 @@ def greedy_para(model: Model):
                     sfc, optimal_config.route, place, optimal_config.route_latency, optimal_config.idx)
                 sfc.accepted_configuration = configuration
             else:
-                configuration = generate_configuration_greedy_dc_dfs(topo, sfc)
+                configuration = generate_configuration_greedy_dfs(topo, sfc)
                 if configuration and is_configuration_valid(topo, sfc, configuration):
                     sfc.accepted_configuration = configuration
                 # else reject
