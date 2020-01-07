@@ -8,19 +8,35 @@ def single_test_rorp():
     Configuration.para = True
     config.DC_CHOOSING_SERVER = True
 
-    topo = topology.vl2_topo(port_num_of_aggregation_switch=6, port_num_of_tor_for_server=4)
+    topo = topology.vl2_topo(port_num_of_aggregation_switch=8, port_num_of_tor_for_server=6)
     vnf_set = generate_vnf_set(size=30)
 
     model = Model(topo, generate_sfc_list2(topo=topo, vnf_set=vnf_set, size=100, base_idx=0))
     model.draw_topo()
 
-    # optimal = linear_programming(model)
-    # rorp_result = rorp(model)
+    result ={}
 
-    # model.clear()
-    greedy_result = greedy_para(model)
-    greedy_result = greedy_dc(model)
+    optimal = linear_programming(model)
+    result['ILP greedy rounding'] = rounding_to_integral(model, rounding_greedy)
 
+    model.clear()
+    optimal = linear_programming(model)
+    result['RORP'] = rorp(model)
+
+    model.clear()
+    result['greedy para']= greedy_para(model)
+
+    model.clear()
+    result['greedy old']= greedy_dc(model)
+
+    print_dict_result(result, model)
+
+def print_dict_result(result, model):
+    print("\n>>>>>>>>>>>>>>>>>> Result Summary <<<<<<<<<<<<<<<<<<")
+    print("{}\n".format(model))
+    for key in result:
+        print("{}: {}".format(key, result[key]))
+    
 
 def main():
     # parameter init

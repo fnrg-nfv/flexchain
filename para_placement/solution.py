@@ -14,21 +14,12 @@ def linear_programming(model: Model) -> (float, int, float, float):
     print("\n>>> Start LP <<<")
     problem = LpProblem("VNF Placement", LpMaximize)
 
-    # print(">> Variables init...")
-    config.K = max(config.K / 2, 10)
-    with TicToc("GC"), PixelBar(">> Generating configuration set for SFC") as bar:
+    # config.K = max(config.K / 2, 10)
+    with TicToc("GeneratingConfiguration"), PixelBar(">> Generating configuration set for SFC") as bar:
         bar.max = len(model.sfc_list)
         for idx, sfc in enumerate(model.sfc_list):
-            if DC:
-                sfc.configurations = generate_configurations_dc(
-                    model.topo, sfc)
-            else:
-                sfc.configurations = generate_configurations_for_one_sfc(
-                    model.topo, sfc)
+            sfc.configurations = generate_configurations_dc(model.topo, sfc)
 
-            # print("\r>> You have generated {}/{} configuration sets (last size: {}({},{}))"
-            #       .format(idx + 1, len(model.sfc_list), len(sfc.configurations), len(sfc.vnf_list),
-            #               sfc.computing_resources_sum), end='')
             # filter configurations whose latency is legal. IMPORTANT
             sfc.configurations = list(
                 filter(lambda c: c.get_latency() <= sfc.latency, sfc.configurations))
@@ -41,7 +32,7 @@ def linear_programming(model: Model) -> (float, int, float, float):
 
     # total number of valid sfc
     config_num = sum(len(sfc.configurations) for sfc in model.sfc_list)
-    valid_sfc_num = sum(len(sfc.configurations) for sfc in model.sfc_list)
+    valid_sfc_num = sum(len(sfc.configurations) > 0 for sfc in model.sfc_list)
     print("Number of LP Variables: {}\tValid SFC: {}".format(
         config_num, valid_sfc_num))
 
@@ -346,21 +337,23 @@ def greedy_para(model: Model):
         6. If so, accept the configuraiton
         7. Otherwise, refuse the sfc
     """
+    print("\n>>> Para Greedy Start <<<")
+
     topo = copy.deepcopy(model.topo)
     sfcs = model.sfc_list
-    sfcs.sort(key=lambda x: x.computing_resources_sum)
+    sfcs.sort(key=lambda sfc: sfc.computing_resources_sum)
 
-    with PixelBar("SFC placement") as bar:
+    with TicToc("ParaGreedy"), PixelBar("SFC placement") as bar:
         bar.max = len(sfcs)
-        for idx, sfc in enumerate(sfcs):
+        for sfc in sfcs:
             # generate optimal sfc
-            pa = ParaAnalyzer(sfc.vnf_list)
+            pa = ParaAnalyzer(sfc.vnf_list[:])
             optimal_sfc = copy.deepcopy(sfc)
             optimal_sfc.vnf_list = pa.opt_vnf_list
 
             optimal_config = generate_configuration_greedy_dc_dfs(
                 topo, optimal_sfc)
-            if optimal_config:
+            if optimal_config and is_configuration_valid(topo, optimal_sfc, optimal_config):
                 # generate origin "place" from merge "place"
                 merged_vnf_index = 0
                 place = [optimal_config.place[0]]
@@ -371,21 +364,19 @@ def greedy_para(model: Model):
 
                 configuration = Configuration(
                     sfc, optimal_config.route, place, optimal_config.route_latency, optimal_config.idx)
-                if is_configuration_valid(topo, sfc, configuration):
-                    sfc.accepted_configuration = configuration
-                    bar.next()
-                    continue
-
-            configuration = generate_configuration_greedy_dc_dfs(topo, sfc)
-            if configuration and is_configuration_valid(topo, sfc, configuration):
                 sfc.accepted_configuration = configuration
+            else:
+                configuration = generate_configuration_greedy_dc_dfs(topo, sfc)
+                if configuration and is_configuration_valid(topo, sfc, configuration):
+                    sfc.accepted_configuration = configuration
+                # else reject
 
             bar.next()
 
     obj_val = objective_value(model)
     accept_sfc_number = len(model.get_accepted_sfc_list())
     latency = average_latency(model)
-    print("\nObjective Value: {} ({}, {}, {})".format(
+    print("Objective Value: {} ({}, {}, {})".format(
         obj_val, evaluate(model), accept_sfc_number, latency))
     return obj_val, accept_sfc_number, latency, model.compute_resource_utilization()
 

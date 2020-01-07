@@ -279,8 +279,6 @@ class Configuration(BaseObject):
             self.edges[(n1, n2)] += 1
             self.edges[(n2, n1)] += 1
 
-        self.l = 9999999  # used to find optimal situation
-
     def __str__(self):
         return "route: {}\tplace: {}\tcomputing_resource: {}".format(self.route.__str__(), self.place.__str__(),
                                                                      self.computing_resource.__str__())
@@ -290,8 +288,7 @@ class Configuration(BaseObject):
     # latency (normal & para)
     def get_latency(self) -> float:
         if Configuration.para:
-            processing_latency, _ = self.para_analysis()
-            return self.route_latency + processing_latency
+            return self.route_latency + self.para_analyze()
         return self.route_latency + self.sfc.latency_sum
 
     # get the max resource usage ratio
@@ -302,130 +299,64 @@ class Configuration(BaseObject):
                 self.computing_resource[pos] / topo.nodes.data()[pos]['computing_resource'], ret)
         return ret
 
-    def para_analysis(self):
+    def para_analyze(self):
         """
         Get the optimal parallel execution situation using backtracking
         """
-        optimal_para = []
-        vnfs = [self.sfc.vnf_list[0]]
+        vnf_list_list = [[self.sfc.vnf_list[0]]]
         for i in range(len(self.place) - 1):
+            next_vnf = self.sfc.vnf_list[i + 1]
             if self.place[i] == self.place[i + 1]:
-                vnfs.append(self.sfc.vnf_list[i + 1])
+                vnf_list_list[-1].append(next_vnf)
             else:
-                if len(vnfs) > 1:
-                    result = []
-                    self.l = 999999
-                    self.backtracking_analysis(0, vnfs, [], result)
-                    optimal_para.extend(result)
-                    optimal_para.append(0)
-                    vnfs = [self.sfc.vnf_list[i + 1]]
-                else:
-                    optimal_para.append(0)
-                    vnfs = [self.sfc.vnf_list[i + 1]]
-        if len(vnfs) > 1:
-            result = []
-            self.l = 999999
-            self.backtracking_analysis(0, vnfs, [], result)
-            optimal_para.extend(result)
+                vnf_list_list.append([next_vnf])
 
-        total_latency = 0
-        sub_chain_latency = self.sfc.vnf_list[0].latency
-        for i in range(len(optimal_para)):
-            if optimal_para[i] == 1:
-                sub_chain_latency = max(
-                    sub_chain_latency, self.sfc.vnf_list[i + 1].latency)
-            else:
-                total_latency += sub_chain_latency
-                sub_chain_latency = self.sfc.vnf_list[i + 1].latency
-        total_latency += sub_chain_latency
+        opt_latency = 0
+        for vnf_list in vnf_list_list:
+            pa = ParaAnalyzer(vnf_list)
+            opt_latency += pa.opt_latency
 
-        return total_latency, optimal_para
-
-    def backtracking_analysis(self, index, vnfs, analysis_result, result):
-        """
-        for vnf in vnfs, find the optimal parallelism situation and save result in result.
-        len(result) = len(vnfs) - 1
-        result[i] indicates vnfs[i] and vnfs[i+1] whether execute parallelism. 0 for no, 1 for yes
-        """
-        if index == len(vnfs) - 1:
-            # analysis end, compute latency
-            l = 0
-            for vnf in vnfs:
-                l = l + vnf.latency
-            if l < self.l:
-                # find a better situation
-                self.l = l
-                result.clear()
-                result.extend(analysis_result)
-            return
-        if VNF.parallelizable_analysis(vnfs[index], vnfs[index + 1]) >= 0:
-            # parallelizable
-            vnf1 = vnfs.pop(index)
-            vnf2 = vnfs.pop(index)
-            new_vnf = VNF(max(vnf1.latency, vnf2.latency),
-                          vnf1.computing_resource + vnf2.computing_resource,
-                          set.union(vnf1.read_fields, vnf2.read_fields),
-                          set.union(vnf1.write_fields, vnf2.write_fields))
-            vnfs.insert(index, new_vnf)
-            analysis_result.append(1)
-            self.backtracking_analysis(index, vnfs, analysis_result, result)
-            vnfs.pop(index)
-            vnfs.insert(index, vnf2)
-            vnfs.insert(index, vnf1)
-            analysis_result.pop()
-            analysis_result.append(0)
-            self.backtracking_analysis(index + 1, vnfs, analysis_result,
-                                       result)
-            analysis_result.pop()
-        else:
-            analysis_result.append(0)
-            self.backtracking_analysis(index + 1, vnfs, analysis_result,
-                                       result)
-            analysis_result.pop()
-
-        # find the shortest distance to every point
+        return opt_latency
 
 
 class ParaAnalyzer:
     def __init__(self, vnf_list):
-        self.opt_latency = sys.maxsize
-        self.opt_strategy = []
-        self.opt_vnf_list= []
-        self._backtracing(0, vnf_list, [])
+        self.opt_latency = sum(vnf.latency for vnf in vnf_list)
+        self.opt_vnf_list = vnf_list
+        self.opt_strategy = [0 for i in range(len(vnf_list) - 1)]
 
-    def _backtracing(self, index, vnf_list, strategy):
+        if len(vnf_list) > 0:
+            self._strategy_dfs(0, vnf_list[:], [])
+
+    def _strategy_dfs(self, index, vnf_list, strategy):
         """
-        for vnf in vnfs, find the optimal parallelism situation and save result in result.
-        len(result) = len(vnfs) - 1
-        result[i] indicates vnfs[i] and vnfs[i+1] whether execute parallelism. 0 for no, 1 for yes
+        SUMMARY:
+            for vnf in vnfs, find the optimal parallel strategy, and save it in "strategy".
+        NOTE:
+            len(strategy) == len(vnf_list) - 1
+            strategy[i] indicates whether vnfs[i] and vnfs[i+1] work in parallel. 0 for no, 1 for yes
         """
-        if index >= len(vnf_list) - 1:
-            # end
+
+        if index >= len(vnf_list) - 1:  # dfs endpoint
             latency = sum(vnf.latency for vnf in vnf_list)
             if latency < self.opt_latency:
-                self.opt_latency = latency
-                self.opt_strategy = strategy[:]
-                self.opt_vnf_list = vnf_list[:]
+                self.opt_latency, self.opt_strategy, self.opt_vnf_list = latency, strategy, vnf_list
         else:
-            # parallelizable
-            if VNF.parallelizable_analysis(vnf_list[index], vnf_list[index + 1]) >= 0:
-                # branch 1
-                vnf1 = vnf_list.pop(index)
-                vnf2 = vnf_list.pop(index)
-                new_vnf = VNF.para_merge(vnf1, vnf2)
-                vnf_list.insert(index, new_vnf)
-                strategy.append(1)
-                self._backtracing(index, vnf_list, strategy)
-                vnf_list.pop(index)
-                vnf_list.insert(index, vnf2)
-                vnf_list.insert(index, vnf1)
-                strategy.pop()
+            if VNF.parallelizable_analysis(vnf_list[index], vnf_list[index + 1]) >= 0:  # branch 1: parallelizable
+                new_vnf_list = vnf_list[:]
+                vnf1 = new_vnf_list.pop(index)
+                vnf2 = new_vnf_list.pop(index)
+                merged_vnf = VNF.para_merge(vnf1, vnf2)
+                new_vnf_list.insert(index, merged_vnf)
+
+                new_strategy = strategy[:]
+                new_strategy.append(1)
+                self._strategy_dfs(index, new_vnf_list, new_strategy)
 
             # branch 2
             strategy.append(0)
-            self._backtracing(
-                index + 1, vnf_list, strategy)
-            strategy.pop()
+            self._strategy_dfs(index + 1, vnf_list[:], strategy)
+
 
 
 def _dijkstra(topo: nx.Graph, s) -> {}:
