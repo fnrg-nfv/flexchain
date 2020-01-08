@@ -45,7 +45,7 @@ def main_compare():
     sizes = [30 * (i + 1) for i in range(10)]
 
     # TODO: for test
-    sizes = [90, 180]
+    # sizes = [90, 180]
 
     result = dict()
 
