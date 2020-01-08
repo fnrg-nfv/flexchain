@@ -25,7 +25,7 @@ def single_test():
 
     model = load_file("testcase/vl2_400")
     model.sfc_list = model.sfc_list[:200]
-    model.draw_topo()
+    # model.draw_topo()
 
     result = {}
 
@@ -45,7 +45,7 @@ def k_experiment():
 
     model = load_file("testcase/vl2_400")
     model.sfc_list = model.sfc_list[:200]
-    model.draw_topo()
+    # model.draw_topo()
 
     results = {}
 
