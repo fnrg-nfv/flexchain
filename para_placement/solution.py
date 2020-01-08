@@ -11,18 +11,14 @@ from ttictoc import TicToc
 
 
 def linear_programming(model: Model) -> (float, int, float, float):
-    print("\n>>> Start LP <<<")
+    print(">>> Start LP <<<")
     problem = LpProblem("VNF Placement", LpMaximize)
 
-    # config.K = max(config.K / 2, 10)
-    with TicToc("GeneratingConfiguration"), PixelBar(">> Generating configuration set for SFC") as bar:
+    with TicToc("GenC"), PixelBar("Generating configuration sets") as bar:
         bar.max = len(model.sfc_list)
         for idx, sfc in enumerate(model.sfc_list):
-            sfc.configurations = generate_configurations(model.topo, sfc)
 
-            # filter configurations whose latency is legal. IMPORTANT
-            sfc.configurations = list(
-                filter(lambda c: c.get_latency() <= sfc.latency, sfc.configurations))
+            sfc.configurations = generate_configurations(model.topo, sfc)
 
             for configuration in sfc.configurations:
                 configuration.var = LpVariable(
@@ -36,41 +32,34 @@ def linear_programming(model: Model) -> (float, int, float, float):
     print("Number of LP Variables: {}\tValid SFC: {}".format(
         config_num, valid_sfc_num))
 
-    # Objective function
-    with TicToc("OBJ"):
+    with TicToc("LP Solving"):
+        # Objective function
         problem += lpSum((configuration.var for configuration in sfc.configurations)
                          for sfc in model.sfc_list), "Total number of accepted requests"
 
-    # Constraints
-    with TicToc("SBJ Basic"):
+        # Constraints
         # basic constraints
         for sfc in model.sfc_list:
             problem += lpSum(
                 configuration.var for configuration in sfc.configurations) <= 1.0, "Basic_{}".format(sfc.idx)
 
-    # computing resource constraints
-    with TicToc("SBJ CP"):
+        # computing resource constraints
         for index, info in model.topo.nodes.data():
             problem += lpSum(configuration.var * configuration.computing_resource[index]
                              for sfc in model.sfc_list
                              for configuration in sfc.configurations
                              if index in configuration.computing_resource) <= info['computing_resource'], "CR_{}".format(index)
 
-    # throughput constraints
-    with TicToc("SBJ TP"):
+        # throughput constraints
         for start, end, info in model.topo.edges.data():
             problem += lpSum(configuration.var * sfc.throughput * configuration.edges[(start, end)]
                              for sfc in model.sfc_list
                              for configuration in sfc.configurations
                              if (start, end) in configuration.edges) <= info['bandwidth'], "TP_{}_{}".format(start, end)
 
-    with TicToc("LP Solving"):
         problem.solve()
 
-    # reduce the configurations for each sfc
-    for sfc in model.sfc_list:
-        sfc.configurations = list(
-            filter(lambda c: c.var.varValue > 0, sfc.configurations))
+    config.K = max(config.K / 3 *2, 256)
 
     obj_val = value(problem.objective)
     accept_sfc_number = sum(len(sfc.configurations) >
@@ -199,7 +188,7 @@ def rorp(model: Model):
 
 
 # Greedy
-# remove configuration from topo
+# validate configurationa and if valid, remove configuration from topo
 def is_configuration_valid(topo, sfc, configuration):
     if sfc.latency < configuration.get_latency():
         return False
@@ -209,14 +198,15 @@ def is_configuration_valid(topo, sfc, configuration):
             return False
 
     for edge in configuration.edges:
-        if sfc.throughput > topo.edges.get(edge)['bandwidth']:
+        if sfc.throughput * configuration.edges[edge] > topo.edges.get(edge)['bandwidth']:
             return False
 
     for node_pos in configuration.computing_resource:
         topo.nodes[node_pos]['computing_resource'] -= configuration.computing_resource[node_pos]
 
     for edge in configuration.edges:
-        topo.edges.get(edge)['bandwidth'] -= sfc.throughput
+        topo.edges.get(edge)['bandwidth'] -= sfc.throughput * \
+            configuration.edges[edge]
 
     return True
 
@@ -236,17 +226,18 @@ def greedy_dc(model: Model) -> (float, int, float, float):
     sfcs = model.sfc_list
     sfcs.sort(key=lambda x: x.computing_resources_sum)
 
-    for idx, sfc in enumerate(sfcs):
-        configuration = generate_configuration_greedy_dfs(topo, sfc)
-        if configuration and is_configuration_valid(topo, sfc, configuration):
-            sfc.accepted_configuration = configuration
-        print("\r>> You have finished {}/{} sfcs' placements".format(idx +
-                                                                     1, len(sfcs)), end='')
+    with TicToc("Greedy"), PixelBar("SFC placement") as bar:
+        bar.max = len(sfcs)
+        for idx, sfc in enumerate(sfcs):
+            configuration = generate_configuration_greedy_dfs(topo, sfc)
+            if configuration and is_configuration_valid(topo, sfc, configuration):
+                sfc.accepted_configuration = configuration
+            bar.next()
 
     obj_val = objective_value(model)
     accept_sfc_number = len(model.get_accepted_sfc_list())
     latency = average_latency(model)
-    print("\nObjective Value: {} ({}, {}, {})".format(
+    print("Objective Value: {} ({}, {}, {})".format(
         obj_val, evaluate(model), accept_sfc_number, latency))
     return obj_val, accept_sfc_number, latency, model.compute_resource_utilization()
 
@@ -255,7 +246,6 @@ def greedy_para(model: Model):
     """
         1. Sort SFCs by its computing resources in the ascending order. 
         2. For every sfc, compute its merged chain.
-        3. Permute the servers to find a route and place the merged chain.
         3. Find the first path whose resources can fulfill the requirement of sfc. 
         4. If so, accept the configuraiton
         5. Otherwise, try to find the path for the origin sfc 

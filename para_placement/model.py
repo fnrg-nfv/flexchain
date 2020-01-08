@@ -101,14 +101,10 @@ class Model(BaseObject):
         self.sfc_list = sfc_list
 
     def __str__(self):
-        return "<{}>\tPara: {}\tOne Machine: {}\tnodes: {}\tedges: {}\tSFCs: {}".format(self.topo.name,
-                                                                                        Configuration.para,
-                                                                                        config.ONE_MACHINE,
-                                                                                        len(
-                                                                                            self.topo.nodes),
-                                                                                        len(
-                                                                                            self.topo.edges),
-                                                                                        len(self.sfc_list))
+        server_num = sum(
+            self.topo.nodes[n]['computing_resource'] > 0 for n in self.topo.nodes)
+        return "<{}>\tPara: {}\tOne Machine: {}\tnodes: {}\tservers: {}\tedges: {}\tSFCs: {}".format(
+            self.topo.name, Configuration.para, config.ONE_MACHINE, len(self.topo.nodes), server_num, len(self.topo.edges), len(self.sfc_list))
 
     def save(self, filename='model_data.pkl'):
         with open(filename, 'wb') as output:
@@ -301,7 +297,7 @@ class Configuration(BaseObject):
 
     def para_analyze(self):
         """
-        Get the optimal parallel execution situation using backtracking
+        Get the optimal parallel execution situation using dfs
         """
         vnf_list_list = [[self.sfc.vnf_list[0]]]
         for i in range(len(self.place) - 1):
@@ -342,7 +338,8 @@ class ParaAnalyzer:
             if latency < self.opt_latency:
                 self.opt_latency, self.opt_strategy, self.opt_vnf_list = latency, strategy, vnf_list
         else:
-            if VNF.parallelizable_analysis(vnf_list[index], vnf_list[index + 1]) >= 0:  # branch 1: parallelizable
+            # branch 1: parallelizable
+            if VNF.parallelizable_analysis(vnf_list[index], vnf_list[index + 1]) >= 0:
                 new_vnf_list = vnf_list[:]
                 vnf1 = new_vnf_list.pop(index)
                 vnf2 = new_vnf_list.pop(index)
@@ -356,7 +353,6 @@ class ParaAnalyzer:
             # branch 2
             strategy.append(0)
             self._strategy_dfs(index + 1, vnf_list[:], strategy)
-
 
 
 def _dijkstra(topo: nx.Graph, s) -> {}:

@@ -1,37 +1,36 @@
 #!/usr/bin/python3
-
 from para_placement import topology
 from para_placement.helper import *
 from para_placement.solution import *
 
 
-def single_test_rorp():
-    Configuration.para = True
-    config.DC_CHOOSING_SERVER = True
-
+def create_test_case():
     topo = topology.vl2_topo(
         port_num_of_aggregation_switch=8, port_num_of_tor_for_server=6)
     vnf_set = generate_vnf_set(size=30)
 
     model = Model(topo, generate_sfc_list2(
-        topo=topo, vnf_set=vnf_set, size=100, base_idx=0))
+        topo=topo, vnf_set=vnf_set, size=400, base_idx=0))
+
+    save_obj(model, "testcase/vl2_400")
+
+
+def k_experiment():
+    Configuration.para = True
+
+    model = load_file("testcase/vl2_400")
+    model.sfc_list = model.sfc_list[:200]
     model.draw_topo()
 
     result = {}
 
-    optimal = linear_programming(model)
-    result['ILP greedy rounding'] = rounding_to_integral(
-        model, rounding_greedy)
-
+    config.K = 4096
     model.clear()
-    optimal = linear_programming(model)
+    result['optimal'] = linear_programming(model)
     result['RORP'] = rorp(model)
 
     model.clear()
     result['greedy para'] = greedy_para(model)
-
-    model.clear()
-    result['greedy old'] = greedy_dc(model)
 
     print_dict_result(result, model)
 
@@ -97,25 +96,6 @@ def iteration(model: Model):
     return ret
 
 
-def main_dc():
-    topo = topology.fat_tree_topo(n=6)
-    # topo = topology.b_cube_topo(k=2)
-    # topo = topology.vl2_topo(port_num_of_aggregation_switch=6, port_num_of_tor_for_server=4)
-
-    vnf_set = generate_vnf_set(size=30)
-    sfc_size = 200
-    model = Model(topo, generate_sfc_list2(topo, vnf_set, sfc_size))
-    model.draw_topo()
-
-    Configuration.para = True
-    config.DC_CHOOSING_SERVER = True
-
-    result = iteration(model)
-
-    # filename = "result_{}_{}_{}.pkl".format(model.topo.name, sfc_size, current_time())
-    # save_obj(result, filename)
-
-
 @print_run_time
 def comparison(model: Model, init_k=4000):
     print("PLACEMENT MAIN")
@@ -172,5 +152,5 @@ def main_compare():
 
 
 if __name__ == '__main__':
-    with TicToc("s"):
-        single_test_rorp()
+    with TicToc("test"):
+        k_experiment()

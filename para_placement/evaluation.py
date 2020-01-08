@@ -19,7 +19,7 @@ def evaluate(model: Model) -> bool:
 
     # throughput constraints
     for start, end, info in model.topo.edges.data():
-        usage = sum(sfc.throughput
+        usage = sum(sfc.throughput * sfc.accepted_configuration.edges[(start, end)]
                     for sfc in accepted_sfc_list
                     if (start, end) in sfc.accepted_configuration.edges)
         if usage > info['bandwidth']:
