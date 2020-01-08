@@ -2,8 +2,9 @@ import collections
 import os
 import pickle
 from itertools import cycle
-
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy.interpolate import make_interp_spline, BSpline
 
 from para_placement.helper import add_recursively, is_int, save_obj, load_file
 
@@ -38,8 +39,6 @@ def main_compare():
 
 
 def main_time():
-    # result = load_file('./results/vl2/total.pkl', True)
-    # result = load_file('./results/compare/compare_result_Bcube_07_29_13_10_24.pkl', True)
 
     result = load_file('./results/time/time.pkl')
     print(result)
@@ -48,24 +47,9 @@ def main_time():
     pure_draw_plot(x, data, xlabel='Size of topology',
                    ylabel='time (s)', save_file_name='time')
 
-    # for size in result:
-    #     for key1 in result[size]:
-    #         result[size][key1] = result[size][key1]['heuristic']
-
-    # result.pop(100, None)
-    # draw_plot(result, save_file_name='')
-
 
 def main():
-    result = load_file('./results/compare/Bcube_07_31_12_38_44.pkl')
-    result1 = load_file('./results/compare/Bcube_07_31_13_12_51.pkl')
-    result2 = load_file('./results/compare/Bcube_07_31_14_57_07.pkl')
-    for key in result:
-        print(key, result[key])
-        if key in result1:
-            print(result1[key])
-        if key in result2:
-            print(result2[key])
+    result = load_file('./results/fattree/01_08_16_49_31')
     draw_plot(result, save_file_name='')
 
 
@@ -123,18 +107,25 @@ def main_k():
     result = load_file("./results/k/total_01_08_19_46_05")
     result1 = load_file("./results/k/total_01_08_21_08_03")
     result2 = load_file("./results/k/total_01_08_21_12_09")
+    result3 = load_file("./results/k/total_01_08_22_56_54")
     print_dict(result)
     print_dict(result1)
     print_dict(result2)
-    # result.update(result1)
+    print_dict(result3)
     result.update(result2)
-    # result.update(result1)
+    # result.update(result3)
 
-    x = [k for k in result]
+    del result[4096]
+    x = np.array([k for k in result])
     x.sort()
-    x.pop()
-    rorp_y = [result[i]['RORP'][0] for i in x]
-    rorp_time_y = [result[i]['RORP time'] for i in x]
+    x_new = np.linspace(x.min(), x.max(), 300)
+
+    rorp_y = np.array([result[i]['RORP'][0] for i in x])
+    spl = make_interp_spline(x, rorp_y)
+    rorp_y_smooth = spl(x_new)
+    rorp_time_y = np.array([result[i]['RORP time'] for i in x])
+    spl = make_interp_spline(x, rorp_time_y)
+    rorp_time_y_smooth = spl(x_new)
     print(x, rorp_y,  rorp_time_y)
 
     fig, ax1 = plt.subplots()
@@ -143,18 +134,21 @@ def main_k():
     ax1.set_xlabel("k")
     ax1.set_ylabel("RORP Accepted Requests", color=color)
     ax1.plot(x, rorp_y, color=color)
+    # ax1.plot(x_new, rorp_y_smooth, color=color)
     ax1.tick_params(axis='y', labelcolor=color)
 
     ax2 = ax1.twinx()
 
     color = 'tab:blue'
     ax2.set_ylabel("Time", color=color)
-    ax2.plot(x, rorp_time_y, color=color, linewidth=3)
+    ax2.plot(x, rorp_time_y, color=color)
+    # ax2.plot(x_new, rorp_time_y_smooth, color=color)
     ax2.tick_params(axis='y', labelcolor=color)
 
     fig.tight_layout()
 
-    plt.savefig('test.png')
+    # plt.savefig('test.png')
+    plt.show()
 
 
 def draw_plot(result, title='', save_file_name='', index=0, xlabel='Number of SFC Requests', ylabel="Objective Value"):
@@ -222,4 +216,4 @@ def pure_draw_plot(x, data, title='', save_file_name='', xlabel='Number of SFC R
 
 if __name__ == '__main__':
     # main_compare()
-    main_k()
+    main()

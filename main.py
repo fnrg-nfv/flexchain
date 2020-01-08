@@ -47,9 +47,9 @@ def k_experiment():
 
     results = {}
 
-    # k_list = [32, 64, 128, 256, 512, 1024, 2048, 4096]
-    k_list = [250, 500, 750, 1000, 1250, 1500, 1750, 2000]
-    config.K_MIN = 128
+    k_list = [64, 128, 256, 512, 768, 1024, 1280, 1536, 1792, 2048, 4096]
+    # k_list = [250, 500, 750, 1000, 1250, 1500, 1750, 2000]
+    config.K_MIN = 32
 
     for k in k_list:
         result = {}
@@ -68,13 +68,6 @@ def k_experiment():
         results[k] = result
 
     save_obj(results, "results/k/total_{}".format(current_time()))
-
-
-def print_dict_result(result, model):
-    print("\n>>>>>>>>>>>>>>>>>> Result Summary <<<<<<<<<<<<<<<<<<")
-    print("{}\n".format(model))
-    for key in result:
-        print("{}: {}".format(key, result[key]))
 
 
 def vl2_eval():

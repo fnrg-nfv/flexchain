@@ -144,6 +144,9 @@ def rounding_greedy(model: Model):
             else:
                 sfc.accepted_configuration = None
 
+    if not model.get_accepted_sfc_list():
+        greedy_para(model)
+
 
 # recursively
 def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (float, int, float, float):

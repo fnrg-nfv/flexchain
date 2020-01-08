@@ -31,7 +31,8 @@ def print_run_time(func):
     def wrapper(*args, **kw):
         local_time = time.time()
         ret = func(*args, **kw)
-        print('[%s] run time: %s' % (func.__name__, datetime.timedelta(seconds=time.time() - local_time)))
+        print('[%s] run time: %s' % (func.__name__,
+                                     datetime.timedelta(seconds=time.time() - local_time)))
         return ret
 
     return wrapper
@@ -84,3 +85,10 @@ def add_recursively(t1, t2):
         return ret
 
     return t1 + t2
+
+
+def print_dict_result(result, model):
+    print("\n>>>>>>>>>>>>>>>>>> Result Summary <<<<<<<<<<<<<<<<<<")
+    print("{}\n".format(model))
+    for key in result:
+        print("{}: {}".format(key, result[key]))
