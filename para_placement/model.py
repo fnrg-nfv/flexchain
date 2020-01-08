@@ -104,7 +104,7 @@ class Model(BaseObject):
         server_num = sum(
             self.topo.nodes[n]['computing_resource'] > 0 for n in self.topo.nodes)
         return "<{}>\tPara: {}\tOne Machine: {}\tnodes: {}\tservers: {}\tedges: {}\tSFCs: {}".format(
-            self.topo.name, Configuration.para, config.ONE_MACHINE, len(self.topo.nodes), server_num, len(self.topo.edges), len(self.sfc_list))
+            self.topo.name, config.PARA, config.ONE_MACHINE, len(self.topo.nodes), server_num, len(self.topo.edges), len(self.sfc_list))
 
     def save(self, filename='model_data.pkl'):
         with open(filename, 'wb') as output:
@@ -130,7 +130,6 @@ class Model(BaseObject):
                 print(info)
 
         nx.draw(self.topo, with_labels=True)
-        plt.savefig('./topo/{}.png'.format(self.topo.name))
         plt.show()
 
     def output_accepted_configuration(self, filename="ilp_result.txt"):
@@ -280,11 +279,9 @@ class Configuration(BaseObject):
         return "route: {}\tplace: {}\tcomputing_resource: {}".format(self.route.__str__(), self.place.__str__(),
                                                                      self.computing_resource.__str__())
 
-    para = False
-
     # latency (normal & para)
     def get_latency(self) -> float:
-        if Configuration.para:
+        if config.PARA:
             return self.route_latency + self.para_analyze()
         return self.route_latency + self.sfc.latency_sum
 

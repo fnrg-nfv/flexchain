@@ -8,8 +8,8 @@ from ttictoc import tic, toc
 def create_test_case():
     # topo = topology.vl2_topo(
     #     port_num_of_aggregation_switch=8, port_num_of_tor_for_server=6)
-    # topo = topology.fat_tree_topo(n=6)
-    topo = topology.b_cube_topo(k=2)
+    topo = topology.fat_tree_topo(n=7)
+    # topo = topology.b_cube_topo(k=2)
 
     vnf_set = generate_vnf_set(size=30)
 
@@ -17,27 +17,26 @@ def create_test_case():
         topo=topo, vnf_set=vnf_set, size=400, base_idx=0))
     model.draw_topo()
 
-    save_obj(model, "testcase/bcube_2")
+    save_obj(model, "testcase/fattree_7")
 
 
 def single_test():
     Configuration.para = True
+    config.GC_BFS = True
 
-    model = load_file("testcase/vl2_400")
+    model = load_file("testcase/bcube_2")
     model.sfc_list = model.sfc_list[:200]
-    # model.draw_topo()
+    model.draw_topo()
 
     result = {}
 
     model.clear()
     config.K = 1024
     result['optimal'] = linear_programming(model)
-
+    result['RORP'] = rorp(model)
+    model.clear()
     result['greedy para'] = greedy_para(model)
-
     print_dict_result(result, model)
-
-    save_obj(result, "results/k/baseline_{}".format(current_time()))
 
 
 def k_experiment():
@@ -45,7 +44,6 @@ def k_experiment():
 
     model = load_file("testcase/vl2_400")
     model.sfc_list = model.sfc_list[:200]
-    # model.draw_topo()
 
     results = {}
 
@@ -79,34 +77,33 @@ def print_dict_result(result, model):
         print("{}: {}".format(key, result[key]))
 
 
-def first_experience():
+def vl2_eval():
     # parameter init
-    Configuration.para = True
+    config.PARA = True
+    config.GC_BFS = False
 
     # model init
-    topo = topology.fat_tree_topo(n=6)
-    # topo = topology.b_cube_topo(k=2)
-    # topo = topology.vl2_topo(port_num_of_aggregation_switch=6, port_num_of_tor_for_server=4)
-    vnf_set = generate_vnf_set(size=30)
-    model = Model(topo, [])
-
+    model = load_file("testcase/vl2_8_6")
+    origin_sfc_list = model.sfc_list
     model.draw_topo()
 
     iter_times = 10
     unit = 40
+    sizes = [unit * i + unit for i in range(iter_times)]
     result = {}
     temple_files = []
-    sizes = [unit * i + unit for i in range(iter_times)]
+
+    # TODO: for test
+    sizes = [40, 120, 320]
 
     for size in sizes:
-        model = Model(topo, generate_sfc_list2(
-            topo=topo, vnf_set=vnf_set, size=size, base_idx=0))
+        model.sfc_list = origin_sfc_list[:size]
         result[size] = iteration(model)
         temple_files.append(
-            "./results/{}/{}_{}.pkl".format(model.topo.name, size, current_time()))
+            "./results/{}/{}_{}".format(model.topo.name, size, current_time()))
         save_obj(result[size], temple_files[-1])
 
-    filename = "./results/{}/{}.pkl".format(model.topo.name, current_time())
+    filename = "./results/{}/{}".format(model.topo.name, current_time())
     save_obj(result, filename)
 
     for temple_file in temple_files:
@@ -116,20 +113,18 @@ def first_experience():
 @print_run_time
 def iteration(model: Model):
     print("PLACEMENT MAIN")
-    config.K = 8000
-    ret = dict()
+    config.K = 1024
+    result = {}
 
     model.clear()
-    ret['greedy'] = greedy_dc(model)
+    result['greedy'] = greedy_dc(model)
 
     model.clear()
-    ret['optimal'] = linear_programming(model)
-    ret['heuristic'] = rounding_to_integral(
-        model, rounding_method=rounding_one)
+    result['optimal'] = linear_programming(model)
+    result['heuristic'] = rorp(model)
 
-    print_dict_result(ret)
-
-    return ret
+    print_dict_result(result, model)
+    return result
 
 
 @print_run_time
@@ -186,4 +181,4 @@ def main_compare():
 
 if __name__ == '__main__':
     with TicToc("test"):
-        create_test_case()
+        vl2_eval()

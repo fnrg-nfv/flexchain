@@ -108,12 +108,11 @@ def _generate_configurations_permutation(topo: nx.Graph, sfc: SFC):
         sfc.vnf_list)]) / sfc.computing_resources_sum
     if top_ratio < 1.0:
         return[]
-    # if top_ratio < 2.0:
-    #     c = generate_configuration_greedy_dfs(topo, sfc)
-    #     print('greedy gen')
-    #     if c:
-    #         configurations.append(c)
-    #     return configurations
+    elif top_ratio < 1.5:
+        c = generate_configuration_greedy_dfs(topo, sfc)
+        if c:
+            configurations.append(c)
+        return configurations
     if topo.nodes[servers[0]]['computing_resource'] < sfc_max_usage:
         return []
     pa = ParaAnalyzer(sfc.vnf_list)
@@ -127,8 +126,6 @@ def _generate_configurations_permutation(topo: nx.Graph, sfc: SFC):
 
             # timeout
             if time.time() - start > time_limit:
-                top_ratio = sum(topo.nodes[server]['computing_resource'] for server in servers[:len(
-                    sfc.vnf_list)]) / sfc.computing_resources_sum
                 # top_ratio = sum(topo.nodes[server]['computing_resource'] for server in servers[:len(sfc.vnf_list)]) / sfc.computing_resources_sum
                 print("timeout", sfc, pa.opt_latency,
                       len(server_permutation), top_ratio)
@@ -162,8 +159,61 @@ time_limit = 3
 route_limit = 15
 search_limit = 256 * 1024
 
+# BFS
+
+
+def _generate_configurations_bfs(topo: nx.Graph, sfc: SFC) -> List[Configuration]:
+    queue = [([sfc.s], 0)]
+    route_idx = 0
+    configurations = []
+    sfc_min_usage = min(vnf.computing_resource for vnf in sfc.vnf_list)
+    sfc_max_usage = max(vnf.computing_resource for vnf in sfc.vnf_list)
+
+    if all(topo.nodes[node]['computing_resource'] < sfc_max_usage for node in topo.nodes):
+        return []
+    pa = ParaAnalyzer(sfc.vnf_list)
+    if pa.opt_latency > sfc.latency:
+        return []
+
+    start = time.time()
+    while queue:
+        route, route_latency = queue.pop(0)
+        last_node = route[-1]
+
+        if time.time() - start > time_limit:
+            total_ratio = sum(topo.nodes[node]['computing_resource']
+                              for node in topo.nodes) / sfc.computing_resources_sum
+            print("timeout", sfc, pa.opt_latency, len(
+                configurations), total_ratio, len(route))
+            if len(configurations):
+                c = generate_configuration_greedy_dfs(topo, sfc)
+                if c:
+                    print('greedy gen ok')
+                    configurations.append(c)
+            break
+
+        if route[-1] == sfc.d:
+            # accept the route (get the dest & the capacity is enough)
+            route_configurations = _generate_configurations_for_one_route_dc(
+                topo, route, route_latency, sfc, route_idx)
+            configurations.extend(route_configurations)
+            route_idx += 1
+            if len(configurations) >= config.K:
+                break
+        else:
+            # extend the route
+            adjacent_nodes = topo[last_node]
+            for node in adjacent_nodes:
+                if node in route:
+                    continue
+                adj_latency = adjacent_nodes[node]['latency']
+                queue.append(([*route, node], route_latency + adj_latency))
+
+    return configurations
 
 # BFS
+
+
 def _generate_configurations_one_machine(topo: nx.Graph, sfc: SFC) -> List[Configuration]:
     queue = [([sfc.s], 0)]
     idx = 0
@@ -203,14 +253,11 @@ def _generate_configurations_one_machine(topo: nx.Graph, sfc: SFC) -> List[Confi
             for node in adjacent_nodes:
 
                 available = True
+                if node in route:
+                    break
                 for n in reversed(route):
-                    if n == node:
-                        available = False
-                        break
                     if topo.nodes[n]['computing_resource'] >= sfc.computing_resources_sum:
                         break
-                if not available:
-                    continue
 
                 adj_latency = adjacent_nodes[node]['latency']
 
@@ -228,6 +275,8 @@ def _generate_configurations_one_machine(topo: nx.Graph, sfc: SFC) -> List[Confi
 def generate_configurations(topo: nx.Graph, sfc: SFC) -> List[Configuration]:
     if config.ONE_MACHINE:
         return _generate_configurations_one_machine(topo, sfc)
+    if config.GC_BFS:
+        return _generate_configurations_bfs(topo, sfc)
     return _generate_configurations_permutation(topo, sfc)
 
 

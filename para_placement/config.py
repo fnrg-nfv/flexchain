@@ -27,4 +27,8 @@ SFC_CONFIG.vnf_latency = lambda: random.uniform(0.045, 0.3)  # ok
 K = 8000
 K_MIN = 256
 
+PARA = True
+
 ONE_MACHINE = False
+
+GC_BFS = False
