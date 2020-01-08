@@ -104,8 +104,16 @@ def _generate_configurations_permutation(topo: nx.Graph, sfc: SFC):
                ['computing_resource'] >= sfc_min_usage]
     servers.sort(
         key=lambda node: topo.nodes[node]['computing_resource'], reverse=True)
-    if sum(topo.nodes[server]['computing_resource'] for server in servers[:len(sfc.vnf_list)]) < sfc.computing_resources_sum:
-        return []
+    top_ratio = sum(topo.nodes[server]['computing_resource'] for server in servers[:len(
+        sfc.vnf_list)]) / sfc.computing_resources_sum
+    if top_ratio < 1.0:
+        return[]
+    # if top_ratio < 2.0:
+    #     c = generate_configuration_greedy_dfs(topo, sfc)
+    #     print('greedy gen')
+    #     if c:
+    #         configurations.append(c)
+    #     return configurations
     if topo.nodes[servers[0]]['computing_resource'] < sfc_max_usage:
         return []
     pa = ParaAnalyzer(sfc.vnf_list)
@@ -119,10 +127,16 @@ def _generate_configurations_permutation(topo: nx.Graph, sfc: SFC):
 
             # timeout
             if time.time() - start > time_limit:
-                print("timeout", sfc, pa.opt_latency)
-                c = generate_configuration_greedy_dfs(topo, sfc)
-                if c:
-                    configurations.append(c)
+                top_ratio = sum(topo.nodes[server]['computing_resource'] for server in servers[:len(
+                    sfc.vnf_list)]) / sfc.computing_resources_sum
+                # top_ratio = sum(topo.nodes[server]['computing_resource'] for server in servers[:len(sfc.vnf_list)]) / sfc.computing_resources_sum
+                print("timeout", sfc, pa.opt_latency,
+                      len(server_permutation), top_ratio)
+                if len(configurations):
+                    c = generate_configuration_greedy_dfs(topo, sfc)
+                    if c:
+                        print('greedy gen ok')
+                        configurations.append(c)
                 return configurations
 
             server_permutation = list(server_permutation)
@@ -227,7 +241,7 @@ def generate_configuration_greedy_dfs(topo: nx.Graph, sfc: SFC, deep: int = 16) 
 
     sfc_min_requirement = sfc.vnf_list[0].computing_resource
     if config.ONE_MACHINE:
-        sfc_min_requirement= sfc.computing_resources_sum
+        sfc_min_requirement = sfc.computing_resources_sum
     servers = [node for node in topo.nodes if topo.nodes[node]
                ['computing_resource'] >= sfc_min_requirement]
     servers.sort(key=lambda s:  topo.nodes[s]

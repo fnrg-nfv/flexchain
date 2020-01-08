@@ -130,6 +130,7 @@ class Model(BaseObject):
                 print(info)
 
         nx.draw(self.topo, with_labels=True)
+        plt.savefig('./topo/{}.png'.format(self.topo.name))
         plt.show()
 
     def output_accepted_configuration(self, filename="ilp_result.txt"):

@@ -2,7 +2,6 @@ import copy
 
 from pulp import *
 
-from para_placement.config import DC
 from para_placement.evaluation import *
 from para_placement.model import *
 from para_placement.cg import generate_configurations, generate_configuration_greedy_dfs
@@ -59,7 +58,7 @@ def linear_programming(model: Model) -> (float, int, float, float):
 
         problem.solve()
 
-    config.K = max(config.K / 3 *2, 256)
+    config.K = max(config.K / 3 * 2, config.K_MIN)
 
     obj_val = value(problem.objective)
     accept_sfc_number = sum(len(sfc.configurations) >
@@ -145,13 +144,10 @@ def rounding_greedy(model: Model):
             else:
                 sfc.accepted_configuration = None
 
-    if not model.get_accepted_sfc_list():
-        greedy_dc(model)
-
 
 # recursively
 def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (float, int, float, float):
-    print("\n>>> Start Rounding <<<")
+    print(">>> Start Rounding <<<")
 
     rounding_method(model)
 
@@ -220,7 +216,7 @@ def greedy_dc(model: Model) -> (float, int, float, float):
         can fulfill the requirement of sfc. If no available path is found,
         reject the sfc!
     """
-    print("\n>>> Greedy Start <<<")
+    print(">>> Greedy Start <<<")
 
     topo = copy.deepcopy(model.topo)
     sfcs = model.sfc_list
@@ -252,11 +248,14 @@ def greedy_para(model: Model):
         6. If so, accept the configuraiton
         7. Otherwise, refuse the sfc
     """
-    print("\n>>> Para Greedy Start <<<")
+    print(">>> Para Greedy Start <<<")
 
     topo = copy.deepcopy(model.topo)
-    sfcs = model.sfc_list
+    sfcs = model.sfc_list[:]
     sfcs.sort(key=lambda sfc: sfc.computing_resources_sum)
+    # for sfc in sfcs:
+    #     sfc.pa = ParaAnalyzer(sfc.vnf_list[:])
+    # sfcs.sort(key=lambda sfc: sfc.latency-sfc.pa.opt_latency)
 
     with TicToc("ParaGreedy"), PixelBar("SFC placement") as bar:
         bar.max = len(sfcs)
@@ -269,7 +268,7 @@ def greedy_para(model: Model):
             optimal_config = generate_configuration_greedy_dfs(
                 topo, optimal_sfc)
             if optimal_config and is_configuration_valid(topo, optimal_sfc, optimal_config):
-                # generate origin "place" from merge "place"
+                # generate origin "place" from merged "place"
                 merged_vnf_index = 0
                 place = [optimal_config.place[0]]
                 for para in pa.opt_strategy:

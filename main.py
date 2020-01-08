@@ -2,6 +2,7 @@
 from para_placement import topology
 from para_placement.helper import *
 from para_placement.solution import *
+from ttictoc import tic, toc
 
 
 def create_test_case():
@@ -11,8 +12,29 @@ def create_test_case():
 
     model = Model(topo, generate_sfc_list2(
         topo=topo, vnf_set=vnf_set, size=400, base_idx=0))
+    model.draw_topo()
 
-    save_obj(model, "testcase/vl2_400")
+    save_obj(model, "testcase/vl2_8_6_400")
+
+
+def single_test():
+    Configuration.para = True
+
+    model = load_file("testcase/vl2_400")
+    model.sfc_list = model.sfc_list[:200]
+    model.draw_topo()
+
+    result = {}
+
+    model.clear()
+    config.K = 1024
+    result['optimal'] = linear_programming(model)
+
+    result['greedy para'] = greedy_para(model)
+
+    print_dict_result(result, model)
+
+    save_obj(result, "results/k/baseline_{}".format(current_time()))
 
 
 def k_experiment():
@@ -22,17 +44,29 @@ def k_experiment():
     model.sfc_list = model.sfc_list[:200]
     model.draw_topo()
 
-    result = {}
+    results = {}
 
-    config.K = 4096
-    model.clear()
-    result['optimal'] = linear_programming(model)
-    result['RORP'] = rorp(model)
+    # k_list = [32, 64, 128, 256, 512, 1024, 2048, 4096]
+    k_list = [250, 500, 750, 1000, 1250, 1500, 1750, 2000]
+    config.K_MIN = 128
 
-    model.clear()
-    result['greedy para'] = greedy_para(model)
+    for k in k_list:
+        result = {}
+        config.K = k
+        print('k =', k)
+        model.clear()
 
-    print_dict_result(result, model)
+        tic()
+        result['optimal'] = linear_programming(model)
+        result['RORP'] = rorp(model)
+        result['RORP time'] = toc()
+        model.clear()
+        result['greedy'] = greedy_para(model)
+        print_dict_result(result, model)
+        save_obj(result, "results/k/k={}_{}".format(k, current_time()))
+        results[k] = result
+
+    save_obj(results, "results/k/total_{}".format(current_time()))
 
 
 def print_dict_result(result, model):
@@ -42,10 +76,9 @@ def print_dict_result(result, model):
         print("{}: {}".format(key, result[key]))
 
 
-def main():
+def first_experience():
     # parameter init
     Configuration.para = True
-    config.DC_CHOOSING_SERVER = True
 
     # model init
     topo = topology.fat_tree_topo(n=6)
@@ -97,7 +130,7 @@ def iteration(model: Model):
 
 
 @print_run_time
-def comparison(model: Model, init_k=4000):
+def compare_experience(model: Model, init_k=4000):
     print("PLACEMENT MAIN")
     ret = dict()
 
@@ -129,9 +162,6 @@ def comparison(model: Model, init_k=4000):
 
 
 def main_compare():
-    # parameter init
-    config.DC_CHOOSING_SERVER = False
-
     # model init
     topo = topology.b_cube_topo(k=2)
     vnf_set = generate_vnf_set(size=30)
@@ -143,7 +173,7 @@ def main_compare():
     for size in sizes:
         model = Model(topo, generate_sfc_list2(topo, vnf_set, size, 0))
         model.draw_topo()
-        result[size] = comparison(model)
+        result[size] = compare_experience(model)
 
         save_obj(result[size], "./results/compare/{}_{}_{}.pkl".format(
             model.topo.name, size, current_time()))

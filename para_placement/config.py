@@ -6,28 +6,25 @@ def TOPO_CONFIG(): return None
 
 # TOPO_CONFIG.latency = lambda: 0.05 # ok
 TOPO_CONFIG.latency = lambda: 0.001
-TOPO_CONFIG.bandwidth = lambda: 10000 # ok not write no source
-TOPO_CONFIG.cpu = lambda: random.randint(4000, 8000) # ok not write
+TOPO_CONFIG.bandwidth = lambda: 10000  # ok not write no source
+TOPO_CONFIG.cpu = lambda: random.randint(4000, 8000)  # ok not write
 
 
 def SFC_CONFIG(): return None
 
 
-SFC_CONFIG.size = lambda: random.randint(3, 7) # ok
+SFC_CONFIG.size = lambda: random.randint(3, 7)  # ok
 # required throuphput
-SFC_CONFIG.r_throughput = lambda: random.gauss(100, 50)
+SFC_CONFIG.r_throughput = lambda: max(random.gauss(100, 50), 10)
 # required latency
-SFC_CONFIG.r_latency = lambda: random.uniform(0.8, 2.0)
+SFC_CONFIG.r_latency = lambda: random.uniform(1.0, 3.0)
 
 # vnf cpu overhead
-SFC_CONFIG.vnf_cpu = lambda: random.randint(1000, 2000) # no source not write
+SFC_CONFIG.vnf_cpu = lambda: random.randint(1000, 2000)  # no source not write
 # vnf latency overhead
-SFC_CONFIG.vnf_latency = lambda: random.uniform(0.045, 0.3) # ok
+SFC_CONFIG.vnf_latency = lambda: random.uniform(0.045, 0.3)  # ok
 
 K = 8000
-
-DC = True
-
-GREEDY_DFS = True
+K_MIN = 256
 
 ONE_MACHINE = False

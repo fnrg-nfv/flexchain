@@ -33,7 +33,8 @@ def main_compare():
     result.pop(100, None)
     # draw_plot(result, save_file_name='', index=0)
     # draw_plot(result, save_file_name='compare_amount', index=1, ylabel='Total mount of accepted flows')
-    draw_plot(result, save_file_name='compare_latency', index=2, ylabel='Average Latency (ms)')
+    draw_plot(result, save_file_name='compare_latency',
+              index=2, ylabel='Average Latency (ms)')
 
 
 def main_time():
@@ -44,7 +45,8 @@ def main_time():
     print(result)
     x, data = result
     plt.yscale('log')
-    pure_draw_plot(x, data, xlabel='Size of topology', ylabel='time (s)', save_file_name='time')
+    pure_draw_plot(x, data, xlabel='Size of topology',
+                   ylabel='time (s)', save_file_name='time')
 
     # for size in result:
     #     for key1 in result[size]:
@@ -111,6 +113,50 @@ def get_multiple(directory):
     return ordered_results
 
 
+def print_dict(d):
+    for k in d:
+        print(k, d[k])
+    print()
+
+
+def main_k():
+    result = load_file("./results/k/total_01_08_19_46_05")
+    result1 = load_file("./results/k/total_01_08_21_08_03")
+    result2 = load_file("./results/k/total_01_08_21_12_09")
+    print_dict(result)
+    print_dict(result1)
+    print_dict(result2)
+    # result.update(result1)
+    result.update(result2)
+    # result.update(result1)
+
+    x = [k for k in result]
+    x.sort()
+    x.pop()
+    rorp_y = [result[i]['RORP'][0] for i in x]
+    rorp_time_y = [result[i]['RORP time'] for i in x]
+    print(x, rorp_y,  rorp_time_y)
+
+    fig, ax1 = plt.subplots()
+
+    color = 'tab:red'
+    ax1.set_xlabel("k")
+    ax1.set_ylabel("RORP Accepted Requests", color=color)
+    ax1.plot(x, rorp_y, color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+
+    ax2 = ax1.twinx()
+
+    color = 'tab:blue'
+    ax2.set_ylabel("Time", color=color)
+    ax2.plot(x, rorp_time_y, color=color, linewidth=3)
+    ax2.tick_params(axis='y', labelcolor=color)
+
+    fig.tight_layout()
+
+    plt.savefig('test.png')
+
+
 def draw_plot(result, title='', save_file_name='', index=0, xlabel='Number of SFC Requests', ylabel="Objective Value"):
     x = [key for key in result]  # number of sfc requests
     # index = 0  # objective value
@@ -122,7 +168,8 @@ def draw_plot(result, title='', save_file_name='', index=0, xlabel='Number of SF
                 data[legend] = []
             data[legend].append(result[size][legend][index])
 
-    pure_draw_plot(x, data, title, save_file_name, xlabel=xlabel, ylabel=ylabel)
+    pure_draw_plot(x, data, title, save_file_name,
+                   xlabel=xlabel, ylabel=ylabel)
 
 
 def pure_draw_plot(x, data, title='', save_file_name='', xlabel='Number of SFC Requests', ylabel="Objective Value"):
@@ -164,8 +211,8 @@ def pure_draw_plot(x, data, title='', save_file_name='', xlabel='Number of SFC R
     if save_file_name:
         save_file_name = './eps/{}.eps'.format(save_file_name)
         if os.path.exists(save_file_name):
-            check = input("Overwrite File?")
-            if check == "True":
+            check = input("Overwrite File?(y/N)")
+            if check == "y":
                 plt.savefig(save_file_name, format='eps')
         else:
             plt.savefig(save_file_name, format='eps')
@@ -174,4 +221,5 @@ def pure_draw_plot(x, data, title='', save_file_name='', xlabel='Number of SFC R
 
 
 if __name__ == '__main__':
-    main_compare()
+    # main_compare()
+    main_k()
