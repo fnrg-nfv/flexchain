@@ -6,15 +6,18 @@ from ttictoc import tic, toc
 
 
 def create_test_case():
-    topo = topology.vl2_topo(
-        port_num_of_aggregation_switch=8, port_num_of_tor_for_server=6)
+    # topo = topology.vl2_topo(
+    #     port_num_of_aggregation_switch=8, port_num_of_tor_for_server=6)
+    # topo = topology.fat_tree_topo(n=6)
+    topo = topology.b_cube_topo(k=2)
+
     vnf_set = generate_vnf_set(size=30)
 
     model = Model(topo, generate_sfc_list2(
         topo=topo, vnf_set=vnf_set, size=400, base_idx=0))
     model.draw_topo()
 
-    save_obj(model, "testcase/vl2_8_6_400")
+    save_obj(model, "testcase/bcube_2")
 
 
 def single_test():
@@ -183,4 +186,4 @@ def main_compare():
 
 if __name__ == '__main__':
     with TicToc("test"):
-        k_experiment()
+        create_test_case()
