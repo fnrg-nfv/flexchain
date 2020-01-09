@@ -39,7 +39,6 @@ def main_compare():
 
 
 def main_time():
-
     result = load_file('./results/time/time.pkl')
     print(result)
     x, data = result
@@ -49,7 +48,7 @@ def main_time():
 
 
 def main():
-    result = load_file('./results/fattree/01_08_16_49_31')
+    result = load_file('./results/Bcube/01_08_18_25_54')
     draw_plot(result, save_file_name='')
 
 
@@ -73,7 +72,7 @@ def average_duplicated(result):
 
 def get_multiple(directory):
     results = dict()
-    for root, dirs, files in os.walk(directory):
+    for root, _, files in os.walk(directory):
         for file_ in files:
             filename = os.path.join(root, file_)
             print(filename)
@@ -108,24 +107,22 @@ def main_k():
     result1 = load_file("./results/k/total_01_08_21_08_03")
     result2 = load_file("./results/k/total_01_08_21_12_09")
     result3 = load_file("./results/k/total_01_08_22_56_54")
+    result4 = load_file("./results/k/total_01_08_18_30_31")
     print_dict(result)
     print_dict(result1)
     print_dict(result2)
     print_dict(result3)
+    print_dict(result4)
     result.update(result2)
+    result = result4
     # result.update(result3)
 
-    del result[4096]
+    # del result[4096]
     x = np.array([k for k in result])
     x.sort()
-    x_new = np.linspace(x.min(), x.max(), 300)
 
     rorp_y = np.array([result[i]['RORP'][0] for i in x])
-    spl = make_interp_spline(x, rorp_y)
-    rorp_y_smooth = spl(x_new)
     rorp_time_y = np.array([result[i]['RORP time'] for i in x])
-    spl = make_interp_spline(x, rorp_time_y)
-    rorp_time_y_smooth = spl(x_new)
     print(x, rorp_y,  rorp_time_y)
 
     fig, ax1 = plt.subplots()
@@ -134,7 +131,6 @@ def main_k():
     ax1.set_xlabel("k")
     ax1.set_ylabel("RORP Accepted Requests", color=color)
     ax1.plot(x, rorp_y, color=color)
-    # ax1.plot(x_new, rorp_y_smooth, color=color)
     ax1.tick_params(axis='y', labelcolor=color)
 
     ax2 = ax1.twinx()
@@ -142,7 +138,6 @@ def main_k():
     color = 'tab:blue'
     ax2.set_ylabel("Time", color=color)
     ax2.plot(x, rorp_time_y, color=color)
-    # ax2.plot(x_new, rorp_time_y_smooth, color=color)
     ax2.tick_params(axis='y', labelcolor=color)
 
     fig.tight_layout()
@@ -151,10 +146,10 @@ def main_k():
     plt.show()
 
 
-def draw_plot(result, title='', save_file_name='', index=0, xlabel='Number of SFC Requests', ylabel="Objective Value"):
+def draw_plot(result, title='', save_file_name='', index=0, xlabel='Number of SFC Requests', ylabel="Accepted Requests"):
     x = [key for key in result]  # number of sfc requests
     # index = 0  # objective value
-    data = dict()
+    data = {}
 
     for size in result:
         for legend in result[size]:
@@ -215,5 +210,4 @@ def pure_draw_plot(x, data, title='', save_file_name='', xlabel='Number of SFC R
 
 
 if __name__ == '__main__':
-    # main_compare()
     main()

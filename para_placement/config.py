@@ -15,7 +15,7 @@ def SFC_CONFIG(): return None
 
 SFC_CONFIG.size = lambda: random.randint(3, 7)  # ok
 # required throuphput
-SFC_CONFIG.r_throughput = lambda: max(random.gauss(100, 50), 10)
+SFC_CONFIG.r_throughput = lambda: min(max(random.gauss(100, 50), 10), 200)
 # required latency
 SFC_CONFIG.r_latency = lambda: random.uniform(1.0, 3.0)
 

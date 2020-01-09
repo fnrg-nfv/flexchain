@@ -1,6 +1,7 @@
 import copy
 
-from pulp import *
+# from pulp import *
+from pulp import value, LpContinuous, LpMaximize, LpContinuous, LpVariable, LpProblem, lpSum
 
 from para_placement.evaluation import *
 from para_placement.model import *
@@ -15,8 +16,7 @@ def linear_programming(model: Model) -> (float, int, float, float):
 
     with TicToc("GenC"), PixelBar("Generating configuration sets") as bar:
         bar.max = len(model.sfc_list)
-        for idx, sfc in enumerate(model.sfc_list):
-
+        for sfc in model.sfc_list:
             sfc.configurations = generate_configurations(model.topo, sfc)
 
             for configuration in sfc.configurations:
@@ -227,7 +227,7 @@ def greedy_dc(model: Model) -> (float, int, float, float):
 
     with TicToc("Greedy"), PixelBar("SFC placement") as bar:
         bar.max = len(sfcs)
-        for idx, sfc in enumerate(sfcs):
+        for sfc in sfcs:
             configuration = generate_configuration_greedy_dfs(topo, sfc)
             if configuration and is_configuration_valid(topo, sfc, configuration):
                 sfc.accepted_configuration = configuration

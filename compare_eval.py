@@ -31,7 +31,7 @@ def compare_eval(model: Model, k=512):
     linear_programming(model)
     result['OM'] = rorp(model)
 
-    print_dict_result(result)
+    print_dict_result(result, model)
 
     return result
 
@@ -42,10 +42,10 @@ def main_compare():
     origin_sfc_list = model.sfc_list
     model.draw_topo()
 
-    sizes = [30 * (i + 1) for i in range(10)]
+    # sizes = [30 * (i + 1) for i in range(10)]
 
     # TODO: for test
-    # sizes = [90, 180]
+    sizes = [90, 180, 270]
 
     result = dict()
 
