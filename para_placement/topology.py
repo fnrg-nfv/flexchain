@@ -19,7 +19,7 @@ edge bandwidth: 500~5000 Mbps todo
 
 
 # random generate topo with 100 nodes
-def generate_randomly(size: int = 100):
+def generate_randomly(size=100):
     topo = nx.Graph()
     for i in range(size):
         topo.add_node(i, computing_resource=TOPO_CONFIG.cpu())

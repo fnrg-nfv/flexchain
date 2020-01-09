@@ -36,28 +36,26 @@ def compare_eval(model: Model, k=512):
     return result
 
 
-def main_compare():
+def main():
     config.GC_BFS = False
     model = load_file("testcase/vl2_8_6")
     origin_sfc_list = model.sfc_list
     model.draw_topo()
 
-    # sizes = [30 * (i + 1) for i in range(10)]
+    sizes = [30 * (i + 1) for i in range(10)]
 
     # TODO: for test
-    sizes = [90, 180, 270]
+    sizes = [20, 40, 60, 80, 100]
 
-    result = dict()
+    result = {}
 
     for size in sizes:
         model.sfc_list = origin_sfc_list[:size]
         result[size] = compare_eval(model)
-        save_obj(
-            result[size], "./results/compare/{}_{}.pkl".format(size, current_time()))
 
-    save_obj(result, "./results/compare/total_{}.pkl".format(current_time()))
+    save_obj(result, "./results/compare/total_{}".format(current_time()))
 
 
 if __name__ == '__main__':
     with TicToc("test"):
-        main_compare()
+        main()

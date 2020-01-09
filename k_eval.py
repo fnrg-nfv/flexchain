@@ -5,7 +5,7 @@ from para_placement.solution import *
 from ttictoc import tic, toc
 
 
-def k_eval():
+def main():
     Configuration.para = True
 
     model = load_file("testcase/vl2_8_6")
@@ -13,8 +13,7 @@ def k_eval():
 
     results = {}
 
-    # k_list = [64, 128, 256, 512, 768, 1024, 1280, 1536, 1792, 2048, 4096]
-    k_list = [64, 256, 1024, 4096]
+    k_list = [64, 128, 256, 512, 768, 1024, 1280, 1536, 1792, 2048, 4096]
     config.K_MIN = 32
 
     for k in k_list:
@@ -30,7 +29,6 @@ def k_eval():
         model.clear()
         result['greedy'] = greedy_para(model)
         print_dict_result(result, model)
-        save_obj(result, "results/k/k={}_{}".format(k, current_time()))
         results[k] = result
 
     save_obj(results, "results/k/total_{}".format(current_time()))
@@ -38,4 +36,4 @@ def k_eval():
 
 if __name__ == "__main__":
     with TicToc('test'):
-        k_eval()
+        main()

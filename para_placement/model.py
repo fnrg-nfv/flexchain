@@ -101,10 +101,11 @@ class Model(BaseObject):
         self.sfc_list = sfc_list
 
     def __str__(self):
-        server_num = sum(
-            self.topo.nodes[n]['computing_resource'] > 0 for n in self.topo.nodes)
         return "<{}>\tPara: {}\tOne Machine: {}\tnodes: {}\tservers: {}\tedges: {}\tSFCs: {}".format(
-            self.topo.name, config.PARA, config.ONE_MACHINE, len(self.topo.nodes), server_num, len(self.topo.edges), len(self.sfc_list))
+            self.topo.name, config.PARA, config.ONE_MACHINE, len(self.topo.nodes), len(self.servers()), len(self.topo.edges), len(self.sfc_list))
+
+    def servers(self):
+        return [n for n in self.topo.nodes if self.topo.nodes[n]['computing_resource'] > 0]
 
     def save(self, filename='model_data.pkl'):
         with open(filename, 'wb') as output:

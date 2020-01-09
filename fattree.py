@@ -3,6 +3,7 @@ from para_placement import topology
 from para_placement.helper import *
 from para_placement.solution import *
 from ttictoc import tic, toc
+import os
 
 
 def fattree_eval():

@@ -124,17 +124,6 @@ def _generate_configurations_permutation(topo: nx.Graph, sfc: SFC):
     for i in range(1, len(sfc.vnf_list) + 1):
         for server_permutation in itertools.permutations(servers, i):
 
-            # timeout
-            if time.time() - start > time_limit:
-                print("timeout", sfc, pa.opt_latency,
-                      len(server_permutation), top_ratio)
-                if len(configurations):
-                    c = generate_configuration_greedy_dfs(topo, sfc)
-                    if c:
-                        print('greedy gen ok')
-                        configurations.append(c)
-                return configurations
-
             server_permutation = list(server_permutation)
 
             if all(topo.nodes[node]['computing_resource'] < sfc_max_usage for node in server_permutation) or \
@@ -151,6 +140,16 @@ def _generate_configurations_permutation(topo: nx.Graph, sfc: SFC):
             if len(configurations) >= config.K:
                 return configurations
 
+            # timeout
+            if time.time() - start > time_limit:
+                print("timeout", sfc, pa.opt_latency,
+                      len(configurations), top_ratio)
+                c = generate_configuration_greedy_dfs(topo, sfc)
+                if c:
+                    print('greedy gen ok')
+                    configurations.append(c)
+                return configurations
+
     return configurations
 
 
@@ -163,7 +162,6 @@ def _generate_configurations_bfs(topo: nx.Graph, sfc: SFC) -> List[Configuration
     queue = [([sfc.s], 0)]
     route_idx = 0
     configurations = []
-    sfc_min_usage = min(vnf.computing_resource for vnf in sfc.vnf_list)
     sfc_max_usage = max(vnf.computing_resource for vnf in sfc.vnf_list)
 
     if all(topo.nodes[node]['computing_resource'] < sfc_max_usage for node in topo.nodes):

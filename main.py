@@ -6,25 +6,20 @@ from ttictoc import tic, toc
 
 
 def create_testcase():
-    topo = topology.vl2_topo(
-        port_num_of_aggregation_switch=8, port_num_of_tor_for_server=6)
+    # topo = topology.vl2_topo(
+    #     port_num_of_aggregation_switch=8, port_num_of_tor_for_server=6)
     # topo = topology.fat_tree_topo(n=7)
-    # topo = topology.b_cube_topo(k=2)
+    topo = topology.b_cube_topo(k=2)
 
     vnf_set = generate_vnf_set(size=30)
 
     model = Model(topo, generate_sfc_list2(
         topo=topo, vnf_set=vnf_set, size=400, base_idx=0))
-    model.draw_topo()
-
-    save_obj(model, "testcase/vl2_8_6")
-
-
-def show_testcase():
-    model = load_file("testcase/vl2_8_6")
     for idx, sfc in enumerate(model.sfc_list):
         print(idx, sfc)
     model.draw_topo()
+
+    save_obj(model, "testcase/bcube_2")
 
 
 def main():
@@ -48,4 +43,4 @@ def main():
 
 if __name__ == '__main__':
     with TicToc("test"):
-        show_testcase()
+        create_testcase()

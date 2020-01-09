@@ -25,7 +25,7 @@ SFC_CONFIG.vnf_cpu = lambda: random.randint(1000, 2000)  # no source not write
 SFC_CONFIG.vnf_latency = lambda: random.uniform(0.045, 0.3)  # ok
 
 K = 8000
-K_MIN = 256
+K_MIN = 128
 
 PARA = True
 

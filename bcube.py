@@ -22,7 +22,8 @@ def bcube_eval():
     temple_files = []
 
     # TODO: for test
-    sizes = [40, 120, 320]
+    # sizes = [40, 120, 320]
+    sizes = [80, 160, 280]
 
     for size in sizes:
         model.sfc_list = origin_sfc_list[:size]

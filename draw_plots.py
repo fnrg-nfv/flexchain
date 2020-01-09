@@ -9,35 +9,6 @@ from scipy.interpolate import make_interp_spline, BSpline
 from para_placement.helper import add_recursively, is_int, save_obj, load_file
 
 
-def main_compare():
-    result = get_multiple('results/compare/old')
-    print(result)
-
-    for size in result:
-        for key1 in result[size]:
-            result[size][key1] = result[size][key1]['heuristic']
-
-    name_map = {
-        'normal': "heuristic",
-        'unpara': 'PWOP',
-        'one': 'PWPOM'
-    }
-
-    for size in result:
-        for key in name_map:
-            result[size][name_map[key]] = result[size][key]
-            del result[size][key]
-
-    for size in result:
-        del result[size]['PWPOM']
-
-    result.pop(100, None)
-    # draw_plot(result, save_file_name='', index=0)
-    # draw_plot(result, save_file_name='compare_amount', index=1, ylabel='Total mount of accepted flows')
-    draw_plot(result, save_file_name='compare_latency',
-              index=2, ylabel='Average Latency (ms)')
-
-
 def main_time():
     result = load_file('./results/time/time.pkl')
     print(result)
@@ -48,8 +19,12 @@ def main_time():
 
 
 def main():
-    result = load_file('./results/Bcube/01_08_18_25_54')
+    result = load_file('./results/compare/total_01_09_16_20_09')
+    print_dict(result)
+    for k in result:
+        del result[k]['optimal']
     draw_plot(result, save_file_name='')
+    draw_plot(result, save_file_name='', index=2, ylabel="Average Latency")
 
 
 def average_duplicated(result):
@@ -108,14 +83,14 @@ def main_k():
     result2 = load_file("./results/k/total_01_08_21_12_09")
     result3 = load_file("./results/k/total_01_08_22_56_54")
     result4 = load_file("./results/k/total_01_08_18_30_31")
+    result5 = load_file("./results/k/total_01_09_14_26_57")
     print_dict(result)
     print_dict(result1)
     print_dict(result2)
     print_dict(result3)
     print_dict(result4)
-    result.update(result2)
-    result = result4
-    # result.update(result3)
+    print_dict(result5)
+    result = result5
 
     # del result[4096]
     x = np.array([k for k in result])
