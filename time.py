@@ -13,11 +13,12 @@ def main():
     models = []
 
     vnf_set = generate_vnf_set(size=30)
-    for i in [4, 6, 8, 10]:
+    for i in [10]:
         topo = topology.vl2_topo(
             port_num_of_aggregation_switch=i, port_num_of_tor_for_server=i)
         model = Model(topo, generate_sfc_list2(
-            topo=topo, vnf_set=vnf_set, size=400, base_idx=0))
+            topo=topo, vnf_set=vnf_set, size=600, base_idx=0))
+        model.sfc_list = model.sfc_list[:2 * len(model.servers())]
         models.append(model)
 
     greedy_results = {}
@@ -35,7 +36,7 @@ def main():
     save_obj(greedy_results, "./results/time/greedy_{}".format(current_time()))
 
     rorp_results = {}
-    for model in models[:-1]:
+    for model in models:
         result = {}
         model.clear()
         tic()

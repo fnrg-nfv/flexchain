@@ -6,39 +6,28 @@ Jointly consider placement and parallelism of VNF.
 
 Some todo tips.
 
-### LP part
+### RORP
 
-* Remove the latency constraints in program. (It is not written in the paper)
+- how to ensure the first K configurations generated are the optimal
 
-### LP-based Heuristic
+## EVAL
 
-* The precedure of **configuration** generation is too slow. Analysis every
-small step of configuration:
-  1. Permute the available servers (sorted by computing resources);
-     * using python permuation lib
-  2. For each permutation:
-     1. generate routes: 
-        * BFS between each pair; (this can be optimized by pre computing)
-     2. generate configurations (**intensively time-consuming**, this can
-     also be pre computed)
-        * using queue.
-        * irrelative with concrete server.
-  3. Keep generate configurations until its size reaches K. (Note: K is
-  folded after each iteration.)
+[-] bcude
+[=] vl2: almost
+[=] fattree: almost
 
-  how to ensure the first K configurations generated are the optimal
+[x] compare-sfcnum
+[=] compare-latency: w/o para cannot accept all requests in large DC network
 
-* **Analysis** the algorithm, including the performance bound, NP-hardness, etc.
+[o] k: 正在跑k=16
 
-  * ICDCS17：
-    * Jackson network: queueing network
-    * NP-hard: bin packing problem
-    * near optimal
+[=] time
 
-### Greedy
 
-* Need to design a more **enlightening** greedy algorithm, taking parallelism
-into consideration.
+todo: 
+- difference of heutistic relatively in fattree and vl2
+- bcube
+
 
 ## Reference
 

@@ -3,6 +3,7 @@ from para_placement import topology
 from para_placement.helper import *
 from para_placement.solution import *
 from ttictoc import tic, toc
+import os
 
 
 def bcube_eval():
@@ -20,10 +21,6 @@ def bcube_eval():
     sizes = [unit * i + unit for i in range(iter_times)]
     result = {}
     temple_files = []
-
-    # TODO: for test
-    # sizes = [40, 120, 320]
-    sizes = [80, 160, 280]
 
     for size in sizes:
         model.sfc_list = origin_sfc_list[:size]

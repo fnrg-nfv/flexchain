@@ -14,7 +14,8 @@ def main():
     results = {}
 
     k_list = [64, 128, 256, 512, 768, 1024, 1280, 1536, 1792, 2048, 4096]
-    config.K_MIN = 32
+    k_list = [16]
+    config.K_MIN = 16
 
     for k in k_list:
         result = {}

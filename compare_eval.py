@@ -38,14 +38,11 @@ def compare_eval(model: Model, k=512):
 
 def main():
     config.GC_BFS = False
-    model = load_file("testcase/vl2_8_6")
+    model = load_file("testcase/compare")
     origin_sfc_list = model.sfc_list
     model.draw_topo()
 
-    sizes = [30 * (i + 1) for i in range(10)]
-
-    # TODO: for test
-    sizes = [20, 40, 60, 80, 100]
+    sizes = [20 * (i + 1) for i in range(10)]
 
     result = {}
 
