@@ -15,13 +15,17 @@ def main_time():
 
     x, data = transfer_result(result)
 
-    data['heuristic time'] = data['greedy time']
+    data['RORP'] = data['RORP time']
+    data['heuristic'] = data['greedy time']
     del data['greedy time']
+    del data['optimal']
+    del data['greedy']
+    del data['RORP time']
 
     print(data)
     plt.yscale('log')
-    pure_draw_plot(x, data, xlabel='Topology Size',
-                   ylabel='Time (s)', save_file_name='time')
+    draw_plot(x, data, xlabel='Topology Size', ylabel='Running Time (s)',
+              save_file_name='time', colors='rg', linestyles=['--', ':'], markers='^o')
 
 
 def main_compare():
@@ -30,35 +34,43 @@ def main_compare():
     result = load_and_print(filenames[-1])
 
     x, data = transfer_result(result, 0)
-    del data['optimal']
     data['NFP-naive'] = data['OM']
-    del data['OM']
     data['Chain w/o parallelism'] = data['NP']
+    del data['optimal']
+    del data['OM']
     del data['NP']
 
-    pure_draw_plot(x, data, save_file_name='compare-sfcnum')
+    print(data)
+
+    draw_plot(x, data, save_file_name='compare_sfc',
+              colors='rcm', linestyles=['--', ':', '-.'], markers='^x ')
 
 
 def main_compare_latency():
-    filenames = glob.glob("./results/compare/large*")
+    filenames = glob.glob("./results/compare/total*")
     filenames.sort()
     result = load_and_print(filenames[-1])
 
     x, data = transfer_result(result, 2)
-    del data['optimal']
     data['NFP-naive'] = data['OM']
-    del data['OM']
     data['Chain w/o parallelism'] = data['NP']
+    del data['optimal']
+    del data['OM']
     del data['NP']
 
-    pure_draw_plot(x, data, ylabel='Time (s)')
+    draw_plot(x, data, ylabel='Latency (ms)', save_file_name='compare_latency',
+              colors='rcm', linestyles=['--', ':', '-.'], markers='^x ')
 
 
 def main():
-    filenames = glob.glob("./results/Bcube/01*")
+    filenames = glob.glob("./results/VL2/01*")
     filenames.sort()
     result = load_and_print(filenames[-1])
-    draw_plot(result, save_file_name='')
+    x, data = transfer_result(result, index=0)
+    add_zero(x, data)
+    print(x, data)
+    draw_plot(x, data, legends=['optimal', 'RORP',
+                                'heuristic'], save_file_name='vl2')
 
 
 def load_and_print(filename):
@@ -77,7 +89,8 @@ def print_dict(d):
 def main_k():
     filenames = glob.glob("./results/k/total_*")
     filenames.sort()
-    result = load_and_print(filenames[-2])
+    result = load_and_print(filenames[-3])
+    result.update(load_and_print(filenames[-2]))
     result.update(load_and_print(filenames[-1]))
 
     del result[4096]
@@ -94,20 +107,25 @@ def main_k():
     color = 'tab:red'
     ax1.set_xlabel("k")
     ax1.set_ylabel("Number of Accepted Requests", color=color)
-    ax1.set_ylim(62, 100)
-    ax1.plot(x, rorp_y, color=color, marker='o')
+    ax1.set_ylim(60, 100)
+    ax1.plot(x, rorp_y, color=color, linestyle='--', marker='^', linewidth=2)
     ax1.tick_params(axis='y', labelcolor=color)
 
     ax2 = ax1.twinx()
 
     color = 'tab:blue'
     ax2.set_ylabel("Time (s)", color=color)
-    ax2.plot(x, rorp_time_y, color=color, linestyle=':', marker='s')
+    ax2.plot(x, rorp_time_y, color=color,
+             linestyle=':', marker='x', linewidth=1.5)
+    ax2.set_ylim(200, 1800)
     ax2.tick_params(axis='y', labelcolor=color)
 
     fig.tight_layout()
+    plt.grid(linestyle='--')
 
     plt.show()
+    if input("Save this eps?(y/N)") == 'y':
+        plt.savefig('eps/k.eps', format='eps')
 
 
 def transfer_result(result, index=-1):
@@ -126,53 +144,48 @@ def transfer_result(result, index=-1):
     return x, data
 
 
-def draw_plot(result, title='', save_file_name='', index=0, xlabel='Number of SFC Requests', ylabel="Accepted Requests", add_zero=False):
-    x, data = transfer_result(result, index)
-
-    # add zero
-    if add_zero:
-        x.insert(0, 0)
-        for legend in data:
-            data[legend].insert(0, 0)
-
-    pure_draw_plot(x, data, title, save_file_name,
-                   xlabel=xlabel, ylabel=ylabel)
-
-
-def pure_draw_plot(x, data, title='', save_file_name='', xlabel='Number of SFC Requests', ylabel="Accepted Requests"):
-    cycol = cycle('bgrcmk')
-    marker_it = iter(['s', '^', 'o', 'x'])
-    linestyle_it = iter(['-', '--', ':', '-'])
+def add_zero(x, data):
+    x.insert(0, 0)
     for legend in data:
-        plt.plot(x, data[legend], marker=next(marker_it), label=legend, color=next(cycol), linewidth=2,
-                 linestyle=next(linestyle_it))
+        data[legend].insert(0, 0)
 
-    # X轴的文字
+
+def draw_plot(x, data,
+              legends=[],
+              save_file_name='',
+              xlabel='Number of SFC Requests',
+              ylabel="Accepted Requests",
+              title='',
+              colors='brgcmk',
+              markers='s^ox',
+              linestyles=['-', '--', ':']):
+
+    color_cy = cycle(colors)
+    marker_cy = cycle(markers)
+    linestyle_cy = cycle(linestyles)
+    if not legends:
+        legends = [k for k in data]
+    for legend in legends:
+        plt.plot(x, data[legend], marker=next(marker_cy), label=legend, color=next(color_cy), linewidth=2,
+                 linestyle=next(linestyle_cy))
+
     plt.xlabel(xlabel)
-
-    # Y轴的文字
     plt.ylabel(ylabel)
-
-    # 图表的标题
     plt.title(title)
+    plt.grid(linestyle='--')
+    plt.legend()
 
-    # Y轴的范围
-    # plt.ylim(0, 120)
-
-    plt.grid(linestyle='--')  # 显示网格
-    plt.legend()  # 显示图示
+    plt.show()
 
     if save_file_name:
+        write = True
         save_file_name = './eps/{}.eps'.format(save_file_name)
         if os.path.exists(save_file_name):
-            check = input("Overwrite File?(y/N)")
-            if check == "y":
-                plt.savefig(save_file_name, format='eps')
-        else:
+            if input("Overwrite File?(y/N)") != "y":
+                write = False
+        if write:
             plt.savefig(save_file_name, format='eps')
-
-    plt.show()  # 显示图
 
 
 if __name__ == '__main__':
-    main_compare_latency()
+    main()

@@ -176,15 +176,12 @@ def _generate_configurations_bfs(topo: nx.Graph, sfc: SFC) -> List[Configuration
         last_node = route[-1]
 
         if time.time() - start > time_limit:
-            total_ratio = sum(topo.nodes[node]['computing_resource']
-                              for node in topo.nodes) / sfc.computing_resources_sum
-            print("timeout", sfc, pa.opt_latency, len(
-                configurations), total_ratio, len(route))
-            if len(configurations):
-                c = generate_configuration_greedy_dfs(topo, sfc)
-                if c:
-                    print('greedy gen ok')
-                    configurations.append(c)
+            print("timeout", sfc, pa.opt_latency,
+                  len(configurations), len(route))
+            c = generate_configuration_greedy_dfs(topo, sfc)
+            if c:
+                print('greedy gen ok')
+                configurations.append(c)
             break
 
         if route[-1] == sfc.d:
@@ -199,8 +196,8 @@ def _generate_configurations_bfs(topo: nx.Graph, sfc: SFC) -> List[Configuration
             # extend the route
             adjacent_nodes = topo[last_node]
             for node in adjacent_nodes:
-                adj_latency = adjacent_nodes[node]['latency']
-                queue.append(([*route, node], route_latency + adj_latency))
+                latency = adjacent_nodes[node]['latency']
+                queue.append(([*route, node], route_latency + latency))
 
     return configurations
 

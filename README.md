@@ -19,9 +19,9 @@ Some todo tips.
 [x] compare-sfcnum
 [=] compare-latency: w/o para cannot accept all requests in large DC network
 
-[o] k: 正在跑k=16
+[x] k
 
-[=] time
+[x] time
 
 
 todo: 
