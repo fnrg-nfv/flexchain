@@ -22,7 +22,7 @@ def main_time():
     del data['greedy']
     del data['RORP time']
 
-    print(data)
+    print(x, data)
     plt.yscale('log')
     draw_plot(x, data, xlabel='Topology Size', ylabel='Running Time (s)',
               save_file_name='time', colors='rg', linestyles=['--', ':'], markers='^o')
@@ -211,4 +211,4 @@ def draw_plot(x, data,
 
 
 if __name__ == '__main__':
-    main_compare_latency()
+    main_time()

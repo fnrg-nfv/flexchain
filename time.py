@@ -44,8 +44,7 @@ def main():
         result['RORP'] = rorp(model)
         result['RORP time'] = toc()
 
-        print_dict_result(result, model)
-        rorp_results[len(model.servers())] = result
+        print_dict_result(result, model) rorp_results[len(model.servers())] = result
 
     save_obj(rorp_results, "./results/time/rorp_{}".format(current_time()))
 

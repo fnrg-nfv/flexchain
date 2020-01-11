@@ -22,7 +22,7 @@ def fattree_eval():
     result = {}
     temple_files = []
 
-    size = [80, 200]
+    sizes = [80, 200]
 
     for size in sizes:
         model.sfc_list = origin_sfc_list[:size]
