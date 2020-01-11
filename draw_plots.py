@@ -62,7 +62,7 @@ def main_compare_latency():
               colors='rcm', linestyles=['--', ':', '-.'], markers='^x ')
 
 
-def main():
+def main_vl2():
     filenames = glob.glob("./results/VL2/01*")
     filenames.sort()
     result = load_and_print(filenames[-1])
@@ -71,6 +71,28 @@ def main():
     print(x, data)
     draw_plot(x, data, legends=['optimal', 'RORP',
                                 'heuristic'], save_file_name='vl2')
+
+
+def main_fattree():
+    filenames = glob.glob("./results/fattree/01*")
+    filenames.sort()
+    result = load_and_print(filenames[-1])
+    x, data = transfer_result(result, index=0)
+    add_zero(x, data)
+    print(x, data)
+    draw_plot(x, data, legends=['optimal', 'RORP',
+                                'heuristic'], save_file_name='fattree')
+
+
+def main_bcube():
+    filenames = glob.glob("./results/Bcube/01*")
+    filenames.sort()
+    result = load_and_print(filenames[-2])
+    x, data = transfer_result(result, index=0)
+    add_zero(x, data)
+    print(x, data)
+    draw_plot(x, data, legends=['optimal', 'RORP',
+                                'heuristic'], save_file_name='bcube')
 
 
 def load_and_print(filename):
@@ -123,9 +145,9 @@ def main_k():
     fig.tight_layout()
     plt.grid(linestyle='--')
 
-    plt.show()
     if input("Save this eps?(y/N)") == 'y':
         plt.savefig('eps/k.eps', format='eps')
+    plt.show()
 
 
 def transfer_result(result, index=-1):
@@ -175,8 +197,6 @@ def draw_plot(x, data,
     plt.grid(linestyle='--')
     plt.legend()
 
-    plt.show()
-
     if save_file_name:
         write = True
         save_file_name = './eps/{}.eps'.format(save_file_name)
@@ -186,6 +206,8 @@ def draw_plot(x, data,
         if write:
             plt.savefig(save_file_name, format='eps')
 
+    plt.show()
+
 
 if __name__ == '__main__':
-    main()
+    main_k()
