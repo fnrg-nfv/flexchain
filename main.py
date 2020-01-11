@@ -6,10 +6,10 @@ from ttictoc import tic, toc
 
 
 def create_testcase():
-    topo = topology.vl2_topo(
-        port_num_of_aggregation_switch=10, port_num_of_tor_for_server=10)
+    # topo = topology.vl2_topo(
+    #     port_num_of_aggregation_switch=8, port_num_of_tor_for_server=6)
     # topo = topology.fat_tree_topo(n=7)
-    # topo = topology.b_cube_topo(k=2)
+    topo = topology.b_cube_topo(k=2)
 
     vnf_set = generate_vnf_set(size=30)
 
@@ -19,7 +19,7 @@ def create_testcase():
         print(idx, sfc)
     model.draw_topo()
 
-    save_obj(model, "testcase/compare_large")
+    save_obj(model, "testcase/bcube_2_new")
 
 
 def main():

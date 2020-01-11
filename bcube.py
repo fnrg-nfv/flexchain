@@ -13,9 +13,9 @@ def bcube_eval():
     config.ONE_MACHINE = False
 
     # model init
-    model = load_file("testcase/bcube_2")
+    model = load_file("testcase/bcube_2_new")
     origin_sfc_list = model.sfc_list
-    # model.draw_topo()
+    model.draw_topo()
 
     iter_times = 10
     unit = 40
@@ -23,20 +23,20 @@ def bcube_eval():
     result = {}
     temple_files = []
     
-    sizes = [80]
+    sizes = [80, 200]
 
     for size in sizes:
         model.sfc_list = origin_sfc_list[:size]
         result[size] = iteration(model)
-        temple_files.append(
-            "./results/{}/{}_{}".format(model.topo.name, size, current_time()))
-        save_obj(result[size], temple_files[-1])
+        # temple_files.append(
+        #     "./results/{}/{}_{}".format(model.topo.name, size, current_time()))
+        # save_obj(result[size], temple_files[-1])
 
-    filename = "./results/{}/total_{}".format(model.topo.name, current_time())
-    save_obj(result, filename)
+    # filename = "./results/{}/total_{}".format(model.topo.name, current_time())
+    # save_obj(result, filename)
 
-    for temple_file in temple_files:
-        os.remove(temple_file)
+    # for temple_file in temple_files:
+    #     os.remove(temple_file)
 
 
 def iteration(model: Model):
@@ -46,9 +46,9 @@ def iteration(model: Model):
     model.clear()
     result['heuristic'] = greedy_dc(model)
 
-    # model.clear()
-    # config.K = 4096
-    # result['optimal'] = linear_programming(model)
+    model.clear()
+    config.K = 4096
+    result['optimal'] = linear_programming(model)
 
     model.clear()
     config.K = 1024

@@ -12,12 +12,12 @@ Some todo tips.
 
 ## EVAL
 
-[-] bcude
+[=] bcude
 [=] vl2: almost
 [=] fattree: almost
 
 [x] compare-sfcnum
-[=] compare-latency: w/o para cannot accept all requests in large DC network
+[x] compare-latency: change algorithms' positions
 
 [x] k
 
@@ -27,6 +27,10 @@ Some todo tips.
 todo: 
 - difference of heutistic relatively in fattree and vl2
 - bcube
+
+1. 重画compare图，排algorithm的位置，RORP放最后
+2. VL2 fattree bcube 设小参数进行实验；
+3. parabox 的configuration、
 
 
 ## Reference

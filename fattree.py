@@ -12,7 +12,7 @@ def fattree_eval():
     config.GC_BFS = False
 
     # model init
-    model = load_file("testcase/fattree_7")
+    model = load_file("testcase/fattree_7_new")
     origin_sfc_list = model.sfc_list
     model.draw_topo()
 
@@ -22,18 +22,20 @@ def fattree_eval():
     result = {}
     temple_files = []
 
+    size = [80, 200]
+
     for size in sizes:
         model.sfc_list = origin_sfc_list[:size]
         result[size] = iteration(model)
-        temple_files.append(
-            "./results/{}/{}_{}".format(model.topo.name, size, current_time()))
-        save_obj(result[size], temple_files[-1])
+    #     temple_files.append(
+    #         "./results/{}/{}_{}".format(model.topo.name, size, current_time()))
+    #     save_obj(result[size], temple_files[-1])
 
-    filename = "./results/{}/{}".format(model.topo.name, current_time())
-    save_obj(result, filename)
+    # filename = "./results/{}/{}".format(model.topo.name, current_time())
+    # save_obj(result, filename)
 
-    for temple_file in temple_files:
-        os.remove(temple_file)
+    # for temple_file in temple_files:
+    #     os.remove(temple_file)
 
 
 def iteration(model: Model):

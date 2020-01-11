@@ -6,7 +6,7 @@ def TOPO_CONFIG(): return None
 
 # TOPO_CONFIG.latency = lambda: 0.05 # ok
 TOPO_CONFIG.latency = lambda: 0.001
-TOPO_CONFIG.bandwidth = lambda: 10000  # ok not write no source
+TOPO_CONFIG.bandwidth = lambda: 1000  # ok not write no source
 TOPO_CONFIG.cpu = lambda: random.randint(4000, 8000)  # ok not write
 
 

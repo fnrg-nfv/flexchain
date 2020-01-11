@@ -42,8 +42,8 @@ def main_compare():
 
     print(data)
 
-    draw_plot(x, data, save_file_name='compare_sfc',
-              colors='rcm', linestyles=['--', ':', '-.'], markers='^x ')
+    draw_plot(x, data, save_file_name='compare_sfc', legends=[
+              'Chain w/o parallelism', 'NFP-naive', 'RORP'], colors='mcr', linestyles=['-.', ':', '--'], markers=' x^')
 
 
 def main_compare_latency():
@@ -58,8 +58,8 @@ def main_compare_latency():
     del data['OM']
     del data['NP']
 
-    draw_plot(x, data, ylabel='Latency (ms)', save_file_name='compare_latency',
-              colors='rcm', linestyles=['--', ':', '-.'], markers='^x ')
+    draw_plot(x, data, ylabel='Latency (ms)', save_file_name='compare_latency', legends=[
+              'Chain w/o parallelism', 'NFP-naive', 'RORP'], colors='mcr', linestyles=['-.', ':', '--'], markers=' x^')
 
 
 def main_vl2():
@@ -147,6 +147,7 @@ def main_k():
 
     if input("Save this eps?(y/N)") == 'y':
         plt.savefig('eps/k.eps', format='eps')
+    # Note: plt.savefig() must before plt.show()
     plt.show()
 
 
@@ -210,4 +211,4 @@ def draw_plot(x, data,
 
 
 if __name__ == '__main__':
-    main_k()
+    main_compare_latency()
