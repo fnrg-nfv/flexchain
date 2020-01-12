@@ -24,8 +24,6 @@ def main():
     result = {}
     temple_files = []
 
-    sizes = [80, 200]
-
     for size in sizes:
         model.sfc_list = origin_sfc_list[:size]
         result[size] = iteration(model)
