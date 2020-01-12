@@ -8,7 +8,7 @@ from ttictoc import tic, toc
 def main():
     Configuration.para = True
 
-    model = load_file("testcase/vl2_8_6")
+    model = load_file("testcase/vl2")
     model.sfc_list = model.sfc_list[:200]
 
     results = {}

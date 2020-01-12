@@ -12,12 +12,13 @@ TOPO_CONFIG.cpu = lambda: random.randint(4000, 8000)  # ok not write
 
 def SFC_CONFIG(): return None
 
+
 SFC_CONFIG.size = lambda: random.randint(3, 7)  # ok
 # required throuphput
 SFC_CONFIG.r_throughput = lambda: min(max(random.gauss(100, 50), 10), 200)
 # required latency
-SFC_CONFIG.r_latency = lambda: random.uniform(1.0, 3.0)
-# SFC_CONFIG.r_latency = lambda: random.uniform(0.5, 2.0)
+# SFC_CONFIG.r_latency = lambda: random.uniform(1.0, 3.0)
+SFC_CONFIG.r_latency = lambda: random.uniform(0.5, 2.0)
 
 # vnf cpu overhead
 SFC_CONFIG.vnf_cpu = lambda: random.randint(1000, 2000)  # no source not write
@@ -32,3 +33,5 @@ PARA = True
 ONE_MACHINE = False
 
 GC_BFS = False
+
+PARABOX_SIM = False

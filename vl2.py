@@ -12,7 +12,7 @@ def vl2_eval():
     config.GC_BFS = False
 
     # model init
-    model = load_file("testcase/vl2_8_6_new")
+    model = load_file("testcase/vl2")
     origin_sfc_list = model.sfc_list
     model.draw_topo()
 
@@ -27,15 +27,15 @@ def vl2_eval():
     for size in sizes:
         model.sfc_list = origin_sfc_list[:size]
         result[size] = iteration(model)
-    #     temple_files.append(
-    #         "./results/{}/{}_{}".format(model.topo.name, size, current_time()))
-    #     save_obj(result[size], temple_files[-1])
+        temple_files.append(
+            "./results/{}/{}_{}".format(model.topo.name, size, current_time()))
+        save_obj(result[size], temple_files[-1])
 
-    # filename = "./results/{}/{}".format(model.topo.name, current_time())
-    # save_obj(result, filename)
+    filename = "./results/{}/{}".format(model.topo.name, current_time())
+    save_obj(result, filename)
 
-    # for temple_file in temple_files:
-    #     os.remove(temple_file)
+    for temple_file in temple_files:
+        os.remove(temple_file)
 
 
 def iteration(model: Model):

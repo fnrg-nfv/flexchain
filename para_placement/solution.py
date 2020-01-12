@@ -256,17 +256,13 @@ def greedy_para(model: Model):
     topo = copy.deepcopy(model.topo)
     sfcs = model.sfc_list[:]
     sfcs.sort(key=lambda sfc: sfc.computing_resources_sum)
-    # for sfc in sfcs:
-    #     sfc.pa = ParaAnalyzer(sfc.vnf_list[:])
-    # sfcs.sort(key=lambda sfc: sfc.latency-sfc.pa.opt_latency)
 
     with TicToc("ParaGreedy"), PixelBar("SFC placement") as bar:
         bar.max = len(sfcs)
         for sfc in sfcs:
             # generate optimal sfc
-            pa = ParaAnalyzer(sfc.vnf_list[:])
-            optimal_sfc = copy.deepcopy(sfc)
-            optimal_sfc.vnf_list = pa.opt_vnf_list
+            optimal_sfc = SFC(
+                sfc.pa.opt_vnf_list[:], sfc.latency, sfc.throughput, sfc.s, sfc.d, sfc.idx)
 
             optimal_config = generate_configuration_greedy_dfs(
                 topo, optimal_sfc)
@@ -274,7 +270,7 @@ def greedy_para(model: Model):
                 # generate origin "place" from merged "place"
                 merged_vnf_index = 0
                 place = [optimal_config.place[0]]
-                for para in pa.opt_strategy:
+                for para in sfc.pa.opt_strategy:
                     if para == 0:
                         merged_vnf_index += 1
                     place.append(optimal_config.place[merged_vnf_index])

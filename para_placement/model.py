@@ -76,7 +76,7 @@ class VNF(BaseObject):
 
 
 class SFC(BaseObject):
-    def __init__(self, vnf_list: List[VNF], latency: float, throughput: int, s: int, d: int, idx: int):
+    def __init__(self, vnf_list: List[VNF], latency: float, throughput: int, s, d, idx: int):
         self.vnf_list = vnf_list
         self.latency = latency
         self.throughput = throughput
@@ -87,6 +87,8 @@ class SFC(BaseObject):
         self.latency_sum: float = sum(vnf.latency for vnf in vnf_list)
         self.computing_resources_sum: int = sum(
             vnf.computing_resource for vnf in vnf_list)
+
+        self.pa = ParaAnalyzer(self.vnf_list)
 
         self.accepted_configuration: Configuration = None
         self.configurations: List[Configuration] = []
@@ -269,21 +271,44 @@ class Configuration(BaseObject):
 
         # throughput
         self.edges = {}
-        for n1, n2 in pairwise(route):
-            if (n1, n2) not in self.edges:
-                self.edges[(n1, n2)] = 0
-                self.edges[(n2, n1)] = 0
-            self.edges[(n1, n2)] += 1
-            self.edges[(n2, n1)] += 1
+
+        if config.PARABOX_SIM:
+            place_list_list = [[0]]
+            if self.place:
+                place_list_list.append([self.place[0]])
+                for i, para in enumerate(self.sfc.pa.opt_strategy):
+                    next_place = self.place[i + 1]
+                    if para == 1:
+                        place_list_list[-1].append(next_place)
+                    else:
+                        place_list_list.append([next_place])
+            place_list_list.append([len(self.route)-1])
+
+            for place_list1, place_list2 in pairwise(place_list_list):
+                for sub_route in [self.route[i:j+1] for i in place_list1 for j in place_list2]:
+                    for n1, n2 in pairwise(sub_route):
+                        self.edges[(n1, n2)] = self.edges.setdefault(
+                            (n1, n2), 0) + 1
+                        self.edges[(n2, n1)] = self.edges.setdefault(
+                            (n2, n1), 0) + 1
+            self.place_list_list = place_list_list
+        else:
+            for n1, n2 in pairwise(route):
+                self.edges[(n1, n2)] = self.edges.setdefault(
+                    (n1, n2), 0) + 1
+                self.edges[(n2, n1)] = self.edges.setdefault(
+                    (n2, n1), 0) + 1
 
     def __str__(self):
-        return "route: {}\tplace: {}\tcomputing_resource: {}".format(self.route.__str__(), self.place.__str__(),
-                                                                     self.computing_resource.__str__())
+        return "route: {}\nplace: {}\ncomputing_resource: {}\nopt_strategy: {}\nedges: {}\npll: {}".format(
+            self.route.__str__(), self.place.__str__(), self.computing_resource.__str__(), self.sfc.pa.opt_strategy, self.edges, self.place_list_list)
 
     # latency (normal & para)
     def get_latency(self) -> float:
         if config.PARA:
             return self.route_latency + self.para_analyze()
+        elif config.PARABOX_SIM:
+            return self.route_latency + self.sfc.pa.opt_latency
         return self.route_latency + self.sfc.latency_sum
 
     # get the max resource usage ratio

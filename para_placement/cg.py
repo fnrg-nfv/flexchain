@@ -281,7 +281,7 @@ def generate_configurations(topo: nx.Graph, sfc: SFC) -> List[Configuration]:
 def generate_configuration_greedy_dfs(topo: nx.Graph, sfc: SFC, deep: int = 16) -> Configuration:
     s = sfc.s
     d = sfc.d
-    if len(sfc.vnf_list) == 0:
+    if not sfc.vnf_list:
         route, latency = _bfs_route_general(topo, s, d, sfc)
         return Configuration(sfc, route, [], latency, 0)
 
@@ -297,25 +297,24 @@ def generate_configuration_greedy_dfs(topo: nx.Graph, sfc: SFC, deep: int = 16) 
         servers = servers[:deep]
 
     for server in servers:
-        route, latency = _bfs_route_general(topo, s, server, sfc)
+        route, route_latency = _bfs_route_general(topo, s, server, sfc)
 
         if route:
             # build sub topology and sub sfc
-            sub_sfc = copy.deepcopy(sfc)
-            sub_sfc.latency -= latency
-            sub_sfc.s = server
+            sub_vnf_list = sfc.vnf_list[:]
             placed_res = 0
             place = []
-            while sub_sfc.vnf_list and sub_sfc.vnf_list[0].computing_resource <= topo.nodes[server][
+            while sub_vnf_list and sub_vnf_list[0].computing_resource <= topo.nodes[server][
                     'computing_resource']:
-                res = sub_sfc.vnf_list[0].computing_resource
-                placed_res += res
-                topo.nodes[server]['computing_resource'] -= res
+                placed_res += sub_vnf_list[0].computing_resource
+                topo.nodes[server]['computing_resource'] -= sub_vnf_list[0].computing_resource
                 place.append(len(route) - 1)
-                sub_sfc.vnf_list.pop(0)
+                sub_vnf_list.pop(0)
             for edge in pairwise(route):
-                topo.edges.get(edge)['bandwidth'] -= sub_sfc.throughput
+                topo.edges.get(edge)['bandwidth'] -= sfc.throughput
 
+            sub_sfc = SFC(sub_vnf_list, sfc.latency-route_latency,
+                          sfc.throughput, server, sfc.d, sfc.idx)
             sub_configuration = generate_configuration_greedy_dfs(
                 topo, sub_sfc, max(int(deep / 2), 1))
 
@@ -329,8 +328,8 @@ def generate_configuration_greedy_dfs(topo: nx.Graph, sfc: SFC, deep: int = 16) 
                     sub_configuration.place[i] += (len(route) - 1)
                 place.extend(sub_configuration.place)
                 route.extend(sub_configuration.route[1:])
-                latency += sub_configuration.route_latency
-                return Configuration(sfc, route, place, latency, 0)
+                route_latency += sub_configuration.route_latency
+                return Configuration(sfc, route, place, route_latency, 0)
 
     return None
 

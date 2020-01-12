@@ -6,39 +6,23 @@ from ttictoc import tic, toc
 
 
 def create_testcase():
-    # topo = topology.vl2_topo(
-    #     port_num_of_aggregation_switch=8, port_num_of_tor_for_server=6)
-    # topo = topology.fat_tree_topo(n=7)
-    topo = topology.b_cube_topo(k=2)
+    vl2_topo = topology.vl2_topo(
+        port_num_of_aggregation_switch=8, port_num_of_tor_for_server=6)
+    fattree_topo = topology.fat_tree_topo(n=7)
+    bcube_topo = topology.b_cube_topo(k=2)
 
     vnf_set = generate_vnf_set(size=30)
 
-    model = Model(topo, generate_sfc_list2(
-        topo=topo, vnf_set=vnf_set, size=500, base_idx=0))
-    for idx, sfc in enumerate(model.sfc_list):
-        print(idx, sfc)
-    model.draw_topo()
+    vl2_model = Model(vl2_topo, generate_sfc_list2(
+        topo=vl2_topo, vnf_set=vnf_set, size=500, base_idx=0))
+    fattree_model = Model(fattree_topo, generate_sfc_list2(
+        topo=fattree_topo, vnf_set=vnf_set, size=500, base_idx=0))
+    bcube_model = Model(bcube_topo, generate_sfc_list2(
+        topo=bcube_topo, vnf_set=vnf_set, size=500, base_idx=0))
 
-    save_obj(model, "testcase/bcube_2_new")
-
-
-def main():
-    Configuration.para = True
-    config.GC_BFS = True
-
-    model = load_file("testcase/bcube_2")
-    model.sfc_list = model.sfc_list[:200]
-    model.draw_topo()
-
-    result = {}
-
-    model.clear()
-    config.K = 1024
-    result['optimal'] = linear_programming(model)
-    result['RORP'] = rorp(model)
-    model.clear()
-    result['greedy para'] = greedy_para(model)
-    print_dict_result(result, model)
+    save_obj(vl2_model, "testcase/vl2")
+    save_obj(fattree_model, "testcase/fattree")
+    save_obj(bcube_model, "testcase/bcube")
 
 
 if __name__ == '__main__':
