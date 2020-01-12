@@ -43,7 +43,7 @@ def iteration(model: Model):
     result = {}
 
     model.clear()
-    result['heuristic'] = greedy_dc(model)
+    result['heuristic'] = greedy_para(model)
 
     model.clear()
     config.K = 4096

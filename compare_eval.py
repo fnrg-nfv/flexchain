@@ -55,15 +55,13 @@ def main():
 
     sizes = [20 * (i + 1) for i in range(10)]
 
-    sizes = [60, 120, 200]
-
     result = {}
 
     for size in sizes:
         model.sfc_list = origin_sfc_list[:size]
         result[size] = compare_eval(model)
 
-    # save_obj(result, "./results/compare/total_{}".format(current_time()))
+    save_obj(result, "./results/compare/total_{}".format(current_time()))
 
 
 if __name__ == '__main__':

@@ -35,15 +35,17 @@ def main_compare():
 
     x, data = transfer_result(result, 0)
     data['NFP-naive'] = data['OM']
+    data['PARABOX-naive'] = data['PB']
     data['Chain w/o parallelism'] = data['NP']
     del data['optimal']
     del data['OM']
     del data['NP']
+    del data['PB']
 
     print(data)
 
     draw_plot(x, data, save_file_name='compare_sfc', legends=[
-              'Chain w/o parallelism', 'NFP-naive', 'RORP'], colors='mcr', linestyles=['-.', ':', '--'], markers=' x^')
+              'Chain w/o parallelism', 'PARABOX-naive', 'NFP-naive', 'RORP'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^')
 
 
 def main_compare_latency():
@@ -53,13 +55,17 @@ def main_compare_latency():
 
     x, data = transfer_result(result, 2)
     data['NFP-naive'] = data['OM']
+    data['PARABOX-naive'] = data['PB']
     data['Chain w/o parallelism'] = data['NP']
     del data['optimal']
     del data['OM']
     del data['NP']
+    del data['PB']
 
-    draw_plot(x, data, ylabel='Latency (ms)', save_file_name='compare_latency', legends=[
-              'Chain w/o parallelism', 'NFP-naive', 'RORP'], colors='mcr', linestyles=['-.', ':', '--'], markers=' x^')
+    print(data)
+
+    draw_plot(x, data, ylabel='Average SFC Latency (ms)', save_file_name='compare_latency', legends=[
+              'Chain w/o parallelism', 'PARABOX-naive', 'NFP-naive', 'RORP'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^')
 
 
 def main_vl2():
@@ -211,4 +217,4 @@ def draw_plot(x, data,
 
 
 if __name__ == '__main__':
-    main_time()
+    main_compare_latency()

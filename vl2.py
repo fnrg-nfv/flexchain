@@ -6,10 +6,12 @@ from ttictoc import tic, toc
 import os
 
 
-def vl2_eval():
+def main():
     # parameter init
     config.PARA = True
     config.GC_BFS = False
+    config.ONE_MACHINE = False
+    config.PARABOX_SIM = False
 
     # model init
     model = load_file("testcase/vl2")
@@ -31,7 +33,7 @@ def vl2_eval():
             "./results/{}/{}_{}".format(model.topo.name, size, current_time()))
         save_obj(result[size], temple_files[-1])
 
-    filename = "./results/{}/{}".format(model.topo.name, current_time())
+    filename = "./results/{}/total_{}".format(model.topo.name, current_time())
     save_obj(result, filename)
 
     for temple_file in temple_files:
@@ -43,7 +45,7 @@ def iteration(model: Model):
     result = {}
 
     model.clear()
-    result['heuristic'] = greedy_dc(model)
+    result['heuristic'] = greedy_para(model)
 
     model.clear()
     config.K = 4096
@@ -60,4 +62,4 @@ def iteration(model: Model):
 
 if __name__ == "__main__":
     with TicToc('test'):
-        vl2_eval()
+        main()

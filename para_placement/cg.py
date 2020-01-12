@@ -282,8 +282,8 @@ def generate_configuration_greedy_dfs(topo: nx.Graph, sfc: SFC, deep: int = 16) 
     s = sfc.s
     d = sfc.d
     if not sfc.vnf_list:
-        route, latency = _bfs_route_general(topo, s, d, sfc)
-        return Configuration(sfc, route, [], latency, 0)
+        route, route_latency = _bfs_route_general(topo, s, d, sfc)
+        return Configuration(sfc, route, [], route_latency, 0)
 
     sfc_min_requirement = sfc.vnf_list[0].computing_resource
     if config.ONE_MACHINE:
@@ -313,14 +313,14 @@ def generate_configuration_greedy_dfs(topo: nx.Graph, sfc: SFC, deep: int = 16) 
             for edge in pairwise(route):
                 topo.edges.get(edge)['bandwidth'] -= sfc.throughput
 
-            sub_sfc = SFC(sub_vnf_list, sfc.latency-route_latency,
+            sub_sfc = SFC(sub_vnf_list, sfc.latency - route_latency,
                           sfc.throughput, server, sfc.d, sfc.idx)
             sub_configuration = generate_configuration_greedy_dfs(
                 topo, sub_sfc, max(int(deep / 2), 1))
 
             # back
             for edge in pairwise(route):
-                topo.edges.get(edge)['bandwidth'] += sub_sfc.throughput
+                topo.edges.get(edge)['bandwidth'] += sfc.throughput
             topo.nodes[server]['computing_resource'] += placed_res
 
             if sub_configuration:
@@ -336,7 +336,7 @@ def generate_configuration_greedy_dfs(topo: nx.Graph, sfc: SFC, deep: int = 16) 
 
 def _bfs_route_general(topo: nx.Graph, s, d, sfc: SFC) -> (List, float):
     queue = [([s], 0)]
-    passed_node = [s]
+    passed_nodes = [s]
 
     while queue:
         route, latency = queue.pop(0)
@@ -347,14 +347,14 @@ def _bfs_route_general(topo: nx.Graph, s, d, sfc: SFC) -> (List, float):
         else:
             adjacent_nodes = topo[cur_node]
             for adj_node in adjacent_nodes:
-                if adj_node in passed_node:
+                if adj_node in passed_nodes:
                     continue
                 if topo[cur_node][adj_node]['bandwidth'] <= sfc.throughput:
                     continue
-                passed_node.append(adj_node)
+                passed_nodes.append(adj_node)
                 new_route = route[:]
                 new_route.append(adj_node)
                 queue.append(
                     (new_route, latency + adjacent_nodes[adj_node]['latency']))
 
-    return [], sys.maxsize
+    return [], 0

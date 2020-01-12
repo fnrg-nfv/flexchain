@@ -94,7 +94,7 @@ class SFC(BaseObject):
         self.configurations: List[Configuration] = []
 
     def __str__(self):
-        return "({}, {}, {}, {}->{})".format(self.vnf_list, self.latency, self.throughput, self.s, self.d)
+        return "({}, {}, {}, {}->{}, pa:{})".format(self.vnf_list, self.latency, self.throughput, self.s, self.d, self.pa)
 
 
 class Model(BaseObject):
@@ -179,7 +179,7 @@ class Model(BaseObject):
                 if edge in sfc.accepted_configuration.edges:
                     consumption += sfc.accepted_configuration.edges[edge] * \
                         sfc.throughput
-            print(edge, "{}/{}".format(consumption, self.topo.edges.get(edge)['bandwidth']),
+            print(edge, "{:.2f}/{}".format(consumption, self.topo.edges.get(edge)['bandwidth']),
                   "{:.2f}%".format(consumption / self.topo.edges.get(edge)['bandwidth'] * 100))
 
     def compute_resource_utilization(self):
@@ -300,16 +300,18 @@ class Configuration(BaseObject):
                     (n2, n1), 0) + 1
 
     def __str__(self):
-        return "route: {}\nplace: {}\ncomputing_resource: {}\nopt_strategy: {}\nedges: {}\npll: {}".format(
-            self.route.__str__(), self.place.__str__(), self.computing_resource.__str__(), self.sfc.pa.opt_strategy, self.edges, self.place_list_list)
+        return "route: {}\nplace: {}\ncomputing_resource: {}\nopt_strategy: {}\nedges: {}".format(
+            self.route.__str__(), self.place.__str__(), self.computing_resource.__str__(), self.sfc.pa.opt_strategy, self.edges)
 
     # latency (normal & para)
     def get_latency(self) -> float:
         if config.PARA:
-            return self.route_latency + self.para_analyze()
-        elif config.PARABOX_SIM:
-            return self.route_latency + self.sfc.pa.opt_latency
-        return self.route_latency + self.sfc.latency_sum
+            if config.PARABOX_SIM:
+                return self.route_latency + self.sfc.pa.opt_latency
+            else:
+                return self.route_latency + self.para_analyze()
+        else:
+            return self.route_latency + self.sfc.latency_sum
 
     # get the max resource usage ratio
     def computing_resource_ratio(self, topo: nx.Graph) -> float:
@@ -377,6 +379,9 @@ class ParaAnalyzer:
             # branch 2
             strategy.append(0)
             self._strategy_dfs(index + 1, vnf_list[:], strategy)
+
+    def __str__(self):
+        return "{} {}".format(self.opt_strategy, self.opt_latency)
 
 
 def _dijkstra(topo: nx.Graph, s) -> {}:

@@ -144,7 +144,7 @@ def rounding_greedy(model: Model):
             else:
                 sfc.accepted_configuration = None
 
-    if not model.get_accepted_sfc_list():
+    if not model.get_accepted_sfc_list() and not config.PARABOX_SIM:
         greedy_para(model)
 
 
@@ -188,24 +188,35 @@ def rorp(model: Model):
 
 # Greedy
 # validate configurationa and if valid, remove configuration from topo
-def is_configuration_valid(topo, sfc, configuration):
+def is_configuration_valid(topo, sfc, configuration, debug=False):
     if sfc.latency < configuration.get_latency():
+        if debug:
+            print("Latency contraint violation: {}+?={} / {}".format(
+                configuration.route_latency, configuration.get_latency(), sfc.latency))
         return False
 
     for node_pos in configuration.computing_resource:
         if configuration.computing_resource[node_pos] > topo.nodes[node_pos]['computing_resource']:
+            if debug:
+                print("Computing contraint violation: {}: {} / {}".format(
+                    node_pos, configuration.computing_resource[node_pos], topo.nodes[node_pos]['computing_resource']))
             return False
 
     for edge in configuration.edges:
         if sfc.throughput * configuration.edges[edge] > topo.edges.get(edge)['bandwidth']:
+            if debug:
+                print("Throughput contraint violation: {}: {} * {} / {}".format(
+                    edge, configuration.edges[edge], sfc.throughput, topo.edges.get(edge)['bandwidth']))
             return False
 
     for node_pos in configuration.computing_resource:
         topo.nodes[node_pos]['computing_resource'] -= configuration.computing_resource[node_pos]
 
-    for edge in configuration.edges:
-        topo.edges.get(edge)['bandwidth'] -= sfc.throughput * \
-            configuration.edges[edge]
+    for start, end, info in topo.edges.data():
+        edge = (start, end)
+        if edge in configuration.edges:
+            topo.edges.get(edge)['bandwidth'] -= sfc.throughput * \
+                configuration.edges[edge]
 
     return True
 
@@ -222,7 +233,7 @@ def greedy_dc(model: Model) -> (float, int, float, float):
     print(">>> Greedy Start <<<")
 
     topo = copy.deepcopy(model.topo)
-    sfcs = model.sfc_list
+    sfcs = model.sfc_list[:]
     sfcs.sort(key=lambda x: x.computing_resources_sum)
 
     with TicToc("Greedy"), PixelBar("SFC placement") as bar:
@@ -243,11 +254,11 @@ def greedy_dc(model: Model) -> (float, int, float, float):
 
 def greedy_para(model: Model):
     """
-        1. Sort SFCs by its computing resources in the ascending order. 
+        1. Sort SFCs by its computing resources in the ascending order.
         2. For every sfc, compute its merged chain.
-        3. Find the first path whose resources can fulfill the requirement of sfc. 
+        3. Find the first path whose resources can fulfill the requirement of sfc.
         4. If so, accept the configuraiton
-        5. Otherwise, try to find the path for the origin sfc 
+        5. Otherwise, try to find the path for the origin sfc
         6. If so, accept the configuraiton
         7. Otherwise, refuse the sfc
     """
@@ -260,14 +271,12 @@ def greedy_para(model: Model):
     with TicToc("ParaGreedy"), PixelBar("SFC placement") as bar:
         bar.max = len(sfcs)
         for sfc in sfcs:
-            # generate optimal sfc
             optimal_sfc = SFC(
                 sfc.pa.opt_vnf_list[:], sfc.latency, sfc.throughput, sfc.s, sfc.d, sfc.idx)
 
             optimal_config = generate_configuration_greedy_dfs(
                 topo, optimal_sfc)
-            if optimal_config and is_configuration_valid(topo, optimal_sfc, optimal_config):
-                # generate origin "place" from merged "place"
+            if optimal_config:   # generate origin "place" from the merged "place"
                 merged_vnf_index = 0
                 place = [optimal_config.place[0]]
                 for para in sfc.pa.opt_strategy:
@@ -277,12 +286,14 @@ def greedy_para(model: Model):
 
                 configuration = Configuration(
                     sfc, optimal_config.route, place, optimal_config.route_latency, optimal_config.idx)
-                sfc.accepted_configuration = configuration
-            else:
+                if is_configuration_valid(topo, sfc, configuration):
+                    sfc.accepted_configuration = configuration
+
+            if not sfc.accepted_configuration:
                 configuration = generate_configuration_greedy_dfs(topo, sfc)
                 if configuration and is_configuration_valid(topo, sfc, configuration):
                     sfc.accepted_configuration = configuration
-                # else reject
+            # else reject
 
             bar.next()
 
