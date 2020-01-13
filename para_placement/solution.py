@@ -144,7 +144,7 @@ def rounding_greedy(model: Model):
             else:
                 sfc.accepted_configuration = None
 
-    if not model.get_accepted_sfc_list() and not config.PARABOX_SIM:
+    if not model.get_accepted_sfc_list():
         greedy_para(model)
 
 

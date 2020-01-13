@@ -1,4 +1,5 @@
 import random
+import enum
 
 
 def TOPO_CONFIG(): return None
@@ -18,7 +19,7 @@ SFC_CONFIG.size = lambda: random.randint(3, 7)  # ok
 SFC_CONFIG.r_throughput = lambda: min(max(random.gauss(100, 50), 10), 200)
 # required latency
 # SFC_CONFIG.r_latency = lambda: random.uniform(1.0, 3.0)
-SFC_CONFIG.r_latency = lambda: random.uniform(0.5, 2.0)
+SFC_CONFIG.r_latency = lambda: random.uniform(0.5, 1.5)
 
 # vnf cpu overhead
 SFC_CONFIG.vnf_cpu = lambda: random.randint(1000, 2000)  # no source not write
@@ -28,10 +29,14 @@ SFC_CONFIG.vnf_latency = lambda: random.uniform(0.045, 0.3)  # ok
 K = 8000
 K_MIN = 128
 
-PARA = True
-
-ONE_MACHINE = False
-
 GC_BFS = False
 
-PARABOX_SIM = False
+
+class Setting(enum.Enum):
+    normal = 1
+    nfp_naive = 2
+    parabox_naive = 3
+    no_para = 4
+
+
+state = Setting.normal

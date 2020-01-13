@@ -103,8 +103,8 @@ class Model(BaseObject):
         self.sfc_list = sfc_list
 
     def __str__(self):
-        return "<{}>\tPara: {}\tOne Machine: {}\tnodes: {}\tservers: {}\tedges: {}\tSFCs: {}".format(
-            self.topo.name, config.PARA, config.ONE_MACHINE, len(self.topo.nodes), len(self.servers()), len(self.topo.edges), len(self.sfc_list))
+        return "<{}>\tState: {}\tnodes: {}\tservers: {}\tedges: {}\tSFCs: {}".format(
+            self.topo.name, config.state, len(self.topo.nodes), len(self.servers()), len(self.topo.edges), len(self.sfc_list))
 
     def servers(self):
         return [n for n in self.topo.nodes if self.topo.nodes[n]['computing_resource'] > 0]
@@ -159,28 +159,30 @@ class Model(BaseObject):
             sfc.accepted_configuration = None
             sfc.configurations = []
 
-    def print_resource_usages(self):
+    def print_resource_usages(self, node=True, edge=True):
         accepted_sfc_list = self.get_accepted_sfc_list()
 
-        for node in self.topo.nodes:
-            if self.topo.nodes[node]['computing_resource'] <= 0:
-                continue
-            consumption = 0
-            for sfc in accepted_sfc_list:
-                if node in sfc.accepted_configuration.computing_resource:
-                    consumption += sfc.accepted_configuration.computing_resource[node]
-            print(node, "{}/{}".format(consumption, self.topo.nodes[node]['computing_resource']),
-                  "{:.2f}%".format(consumption / self.topo.nodes[node]['computing_resource'] * 100))
+        if node:
+            for node in self.topo.nodes:
+                if self.topo.nodes[node]['computing_resource'] <= 0:
+                    continue
+                consumption = 0
+                for sfc in accepted_sfc_list:
+                    if node in sfc.accepted_configuration.computing_resource:
+                        consumption += sfc.accepted_configuration.computing_resource[node]
+                print(node, "{}/{}".format(consumption, self.topo.nodes[node]['computing_resource']),
+                      "{:.2f}%".format(consumption / self.topo.nodes[node]['computing_resource'] * 100))
 
-        for start, end, info in self.topo.edges.data():
-            consumption = 0
-            edge = (start, end)
-            for sfc in accepted_sfc_list:
-                if edge in sfc.accepted_configuration.edges:
-                    consumption += sfc.accepted_configuration.edges[edge] * \
-                        sfc.throughput
-            print(edge, "{:.2f}/{}".format(consumption, self.topo.edges.get(edge)['bandwidth']),
-                  "{:.2f}%".format(consumption / self.topo.edges.get(edge)['bandwidth'] * 100))
+        if edge:
+            for start, end, info in self.topo.edges.data():
+                consumption = 0
+                edge = (start, end)
+                for sfc in accepted_sfc_list:
+                    if edge in sfc.accepted_configuration.edges:
+                        consumption += sfc.accepted_configuration.edges[edge] * \
+                            sfc.throughput
+                print(edge, "{:.2f}/{}".format(consumption, self.topo.edges.get(edge)['bandwidth']),
+                      "{:.2f}%".format(consumption / self.topo.edges.get(edge)['bandwidth'] * 100))
 
     def compute_resource_utilization(self):
         accepted_sfc_list = self.get_accepted_sfc_list()
@@ -253,7 +255,7 @@ def generate_sfc_list2(topo: nx.Graph, vnf_set: List[VNF], size=100, base_idx=0)
 
 
 class Configuration(BaseObject):
-    def __init__(self, sfc: SFC, route: List[int], place: {}, route_latency: int, idx: string):
+    def __init__(self, sfc: SFC, route, place: {}, route_latency: int, idx: string):
         self.sfc = sfc
         self.route = route
         self.place = place
@@ -271,8 +273,7 @@ class Configuration(BaseObject):
 
         # throughput
         self.edges = {}
-
-        if config.PARABOX_SIM:
+        if config.state == config.Setting.parabox_naive:
             place_list_list = [[0]]
             if self.place:
                 place_list_list.append([self.place[0]])
@@ -301,16 +302,17 @@ class Configuration(BaseObject):
 
     def __str__(self):
         return "route: {}\nplace: {}\ncomputing_resource: {}\nopt_strategy: {}\nedges: {}".format(
-            self.route.__str__(), self.place.__str__(), self.computing_resource.__str__(), self.sfc.pa.opt_strategy, self.edges)
+            self.route, self.place.__str__(), self.computing_resource.__str__(), self.sfc.pa.opt_strategy, self.edges)
 
     # latency (normal & para)
     def get_latency(self) -> float:
-        if config.PARA:
-            if config.PARABOX_SIM:
-                return self.route_latency + self.sfc.pa.opt_latency
-            else:
-                return self.route_latency + self.para_analyze()
-        else:
+        if config.state == config.Setting.normal:
+            return self.route_latency + self.para_analyze()
+        elif config.state == config.Setting.parabox_naive:
+            return self.route_latency + self.sfc.pa.opt_latency
+        elif config.state == config.Setting.nfp_naive:
+            return self.route_latency + self.sfc.pa.opt_latency
+        elif config.state == config.Setting.no_para:
             return self.route_latency + self.sfc.latency_sum
 
     # get the max resource usage ratio
