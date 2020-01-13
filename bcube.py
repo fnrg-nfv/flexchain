@@ -9,7 +9,7 @@ import os
 def bcube_eval():
     # parameter init
     config.PARA = True
-    config.GC_BFS = True
+    config.GC_BFS = False
     config.ONE_MACHINE = False
 
     # model init
@@ -22,8 +22,8 @@ def bcube_eval():
     sizes = [unit * i + unit for i in range(iter_times)]
     result = {}
     temple_files = []
-    
-    sizes = [80, 200]
+
+    sizes = [80]
 
     for size in sizes:
         model.sfc_list = origin_sfc_list[:size]
