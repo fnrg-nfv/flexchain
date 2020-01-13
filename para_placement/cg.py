@@ -113,8 +113,7 @@ def _generate_configurations_permutation(topo: nx.Graph, sfc: SFC):
         return configurations
     if topo.nodes[servers[0]]['computing_resource'] < sfc_max_usage:
         return []
-    pa = ParaAnalyzer(sfc.vnf_list)
-    if pa.opt_latency > sfc.latency:
+    if sfc.pa.opt_latency > sfc.latency:
         return []
     if not config.PARA and sum(vnf.latency for vnf in sfc.vnf_list) > sfc.latency:
         return []
@@ -142,11 +141,11 @@ def _generate_configurations_permutation(topo: nx.Graph, sfc: SFC):
 
             # timeout
             if time.time() - start > time_limit:
-                print("timeout", sfc, pa.opt_latency,
-                      len(configurations), top_ratio)
                 c = generate_configuration_greedy_dfs(topo, sfc)
+                if __debug__:
+                    print("timeout", sfc, len(configurations),
+                          top_ratio, c is not None)
                 if c:
-                    print('greedy gen ok')
                     configurations.append(c)
                 return configurations
 
