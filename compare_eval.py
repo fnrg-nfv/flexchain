@@ -10,37 +10,27 @@ def compare_eval(model: Model, k=256):
     print("PLACEMENT MAIN")
     result = dict()
 
-    model.clear()
-    config.K = k
-    config.PARA = True
-    config.ONE_MACHINE = False
-    config.PARABOX_SIM = False
-    result['optimal'] = linear_programming(model)
-    result['RORP'] = rorp(model)
+    # model.clear()
+    # config.K = k
+    # config.state = config.Setting.normal
+    # result['optimal'] = linear_programming(model)
+    # result['RORP'] = rorp(model)
 
     model.clear()
-    config.K = k
-    config.PARA = False
-    config.ONE_MACHINE = False
-    config.PARABOX_SIM = False
-    linear_programming(model)
-    result['NP'] = rorp(model)
+    config.state = config.Setting.normal
+    result['heuristic'] = greedy_para(model)
 
     model.clear()
-    config.K = k
-    config.PARA = True
-    config.ONE_MACHINE = True
-    config.PARABOX_SIM = False
-    linear_programming(model)
-    result['OM'] = rorp(model)
+    config.state = config.Setting.no_para
+    result['Chain w/o parallelism'] = greedy_dc(model)
 
     model.clear()
-    config.K = k
-    config.PARA = True
-    config.ONE_MACHINE = False
-    config.PARABOX_SIM = True
-    linear_programming(model)
-    result['PB'] = rorp(model)
+    config.state = config.Setting.nfp_naive
+    result['NFP-naïve'] = greedy_dc(model)
+
+    model.clear()
+    config.state = config.Setting.parabox_naive
+    result['PARABOX-naïve'] = greedy_dc(model)
 
     print_dict_result(result, model)
 
@@ -49,11 +39,11 @@ def compare_eval(model: Model, k=256):
 
 def main():
     config.GC_BFS = False
-    config.K_MIN = 128
-    model = load_file("testcase/vl2")
+    config.K_MIN = 64
+    model = load_file("testcase/vl2_16_4")
     origin_sfc_list = model.sfc_list
 
-    sizes = [20 * (i + 1) for i in range(10)]
+    sizes = [30 * (i + 1) for i in range(10)]
 
     result = {}
 

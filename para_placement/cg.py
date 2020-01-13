@@ -115,8 +115,6 @@ def _generate_configurations_permutation(topo: nx.Graph, sfc: SFC):
         return []
     if sfc.pa.opt_latency > sfc.latency:
         return []
-    if not config.PARA and sum(vnf.latency for vnf in sfc.vnf_list) > sfc.latency:
-        return []
 
     route_idx = 0
     start = time.time()
@@ -270,33 +268,43 @@ def _generate_configurations_one_machine_bfs(topo: nx.Graph, sfc: SFC) -> List[C
 
 
 def generate_configurations(topo: nx.Graph, sfc: SFC) -> List[Configuration]:
-    if config.ONE_MACHINE:
+    if config.state == config.Setting.nfp_naive:
         return _generate_configurations_one_machine_permutation(topo, sfc)
     if config.GC_BFS:
         return _generate_configurations_bfs(topo, sfc)
     return _generate_configurations_permutation(topo, sfc)
 
 
-def generate_configuration_greedy_dfs(topo: nx.Graph, sfc: SFC, deep: int = 16) -> Configuration:
+def generate_configuration_greedy_dfs(topo: nx.Graph, sfc: SFC, origin_sfc: SFC = None, deep: int = 10, debug=False) -> Configuration:
+    if config.state == config.Setting.parabox_naive and origin_sfc is None:
+        origin_sfc = sfc
+        tp = origin_sfc.throughput * \
+            _tp_parabox(-1, origin_sfc.pa.opt_strategy[:])
+        sfc = SFC(origin_sfc.vnf_list[:],
+                  sfc.latency, tp, sfc.s, sfc.d, sfc.idx)
+
     s = sfc.s
     d = sfc.d
     if not sfc.vnf_list:
-        route, route_latency = _bfs_route_general(topo, s, d, sfc)
+        route, route_latency = _bfs_route_general(topo, s, d, sfc.throughput)
         return Configuration(sfc, route, [], route_latency, 0)
 
     sfc_min_requirement = sfc.vnf_list[0].computing_resource
-    if config.ONE_MACHINE:
+    if config.state == config.Setting.nfp_naive:
         sfc_min_requirement = sfc.computing_resources_sum
     servers = [node for node in topo.nodes if topo.nodes[node]
                ['computing_resource'] >= sfc_min_requirement]
     servers.sort(key=lambda s:  topo.nodes[s]
                  ['computing_resource'], reverse=True)
+    # if [topo.nodes[s]['computing_resource'] for s in servers[:len(sfc.vnf_list)]] < sfc.computing_resources_sum:
+    #     return None
 
     if len(servers) > deep:
         servers = servers[:deep]
 
     for server in servers:
-        route, route_latency = _bfs_route_general(topo, s, server, sfc)
+        route, route_latency = _bfs_route_general(
+            topo, s, server, sfc.throughput)
 
         if route:
             # build sub topology and sub sfc
@@ -312,10 +320,17 @@ def generate_configuration_greedy_dfs(topo: nx.Graph, sfc: SFC, deep: int = 16) 
             for edge in pairwise(route):
                 topo.edges.get(edge)['bandwidth'] -= sfc.throughput
 
+            tp = sfc.throughput
+            if config.state == config.Setting.parabox_naive:
+                s_id = origin_sfc.vnf_list.index(sfc.vnf_list[0])
+                tp = origin_sfc.throughput * \
+                    _tp_parabox(s_id + len(place) - 1,
+                                origin_sfc.pa.opt_strategy[:])
+
             sub_sfc = SFC(sub_vnf_list, sfc.latency - route_latency,
-                          sfc.throughput, server, sfc.d, sfc.idx)
+                          tp, server, sfc.d, sfc.idx)
             sub_configuration = generate_configuration_greedy_dfs(
-                topo, sub_sfc, max(int(deep / 2), 1))
+                topo, sub_sfc, origin_sfc=origin_sfc, deep=max(int(deep / 2), 1), debug=debug)
 
             # back
             for edge in pairwise(route):
@@ -328,12 +343,36 @@ def generate_configuration_greedy_dfs(topo: nx.Graph, sfc: SFC, deep: int = 16) 
                 place.extend(sub_configuration.place)
                 route.extend(sub_configuration.route[1:])
                 route_latency += sub_configuration.route_latency
+                if debug:
+                    print('SUB', sub_sfc)
                 return Configuration(sfc, route, place, route_latency, 0)
 
     return None
 
 
-def _bfs_route_general(topo: nx.Graph, s, d, sfc: SFC) -> (List, float):
+def _tp_parabox(cut, strategy):
+    ret = 0
+    cut += 1
+    strategy.append(0)
+    strategy.append(0)
+    strategy.insert(0, 0)
+    for i in range(0, cut + 1):
+        next = False
+        for j in range(i, len(strategy)):
+            if not next:
+                if strategy[j] == 0:
+                    next = True
+            else:
+                if j > cut:
+                    ret += 1
+                if strategy[j] == 0:
+                    break
+        if not next:
+            ret += 1
+    return ret
+
+
+def _bfs_route_general(topo: nx.Graph, s, d, tp) -> (List, float):
     queue = [([s], 0)]
     passed_nodes = [s]
 
@@ -348,7 +387,7 @@ def _bfs_route_general(topo: nx.Graph, s, d, sfc: SFC) -> (List, float):
             for adj_node in adjacent_nodes:
                 if adj_node in passed_nodes:
                     continue
-                if topo[cur_node][adj_node]['bandwidth'] <= sfc.throughput:
+                if topo[cur_node][adj_node]['bandwidth'] <= tp:
                     continue
                 passed_nodes.append(adj_node)
                 new_route = route[:]

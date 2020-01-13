@@ -34,18 +34,14 @@ def main_compare():
     result = load_and_print(filenames[-1])
 
     x, data = transfer_result(result, 0)
-    data['NFP-naïve'] = data['OM']
-    data['PARABOX-naïve'] = data['PB']
-    data['Chain w/o parallelism'] = data['NP']
-    del data['optimal']
-    del data['OM']
-    del data['NP']
-    del data['PB']
+    data['Ours+PARC'] = data['heuristic']
+    data['PARABOX+naïve'] = data['PARABOX-naïve']
+    data['NFP+naïve'] = data['NFP-naïve']
 
     print(data)
 
     draw_plot(x, data, save_file_name='compare_sfc', legends=[
-              'Chain w/o parallelism', 'PARABOX-naïve', 'NFP-naïve', 'RORP'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^')
+              'Chain w/o parallelism', 'PARABOX+naïve', 'NFP+naïve', 'Ours+PARC'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^')
 
 
 def main_compare_latency():
@@ -54,51 +50,75 @@ def main_compare_latency():
     result = load_and_print(filenames[-1])
 
     x, data = transfer_result(result, 2)
-    data['NFP-naïve'] = data['OM']
-    data['PARABOX-naïve'] = data['PB']
-    data['Chain w/o parallelism'] = data['NP']
-    del data['optimal']
-    del data['OM']
-    del data['NP']
-    del data['PB']
+    data['Ours+PARC'] = data['heuristic']
+    data['PARABOX+naïve'] = data['PARABOX-naïve']
+    data['NFP+naïve'] = data['NFP-naïve']
 
     print(data)
 
     draw_plot(x, data, ylabel='Average SFC Latency (ms)', save_file_name='compare_latency', legends=[
-              'Chain w/o parallelism', 'PARABOX-naïve', 'NFP-naïve', 'RORP'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^')
+              'Chain w/o parallelism', 'PARABOX+naïve', 'NFP+naïve', 'Ours+PARC'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^')
 
 
 def main_vl2():
     filenames = glob.glob("./results/VL2/total*")
     filenames.sort()
-    result = load_and_print(filenames[-1])
+    result = load_and_print(filenames[-2])
     x, data = transfer_result(result, index=0)
+    result2 = load_and_print(filenames[-1])
+    x2, data2 = transfer_result(result2, index=0)
+    data.update(data2)
     add_zero(x, data)
+    data['ROR'] = data['RORP']
+    data['PARC'] = data['heuristic']
+    del data['RORP']
+    del data['heuristic']
     print(x, data)
-    draw_plot(x, data, legends=['optimal', 'RORP',
-                                'heuristic'], save_file_name='vl2')
+    draw_plot(x, data, legends=['optimal', 'ROR',
+                                'PARC'], save_file_name='vl2')
 
 
 def main_fattree():
-    filenames = glob.glob("./results/fattree/01*")
+    filenames = glob.glob("./results/fattree/total*")
     filenames.sort()
     result = load_and_print(filenames[-1])
     x, data = transfer_result(result, index=0)
     add_zero(x, data)
+    data['ROR'] = data['RORP']
+    data['PARC'] = data['heuristic']
+    del data['RORP']
+    del data['heuristic']
     print(x, data)
-    draw_plot(x, data, legends=['optimal', 'RORP',
-                                'heuristic'], save_file_name='fattree')
+    draw_plot(x, data, legends=['optimal', 'ROR',
+                                'PARC'], save_file_name='fattree')
 
 
 def main_bcube():
-    filenames = glob.glob("./results/Bcube/01*")
-    filenames.sort()
-    result = load_and_print(filenames[-2])
+    sizes = [20 * (i+1) for i in range(10)]
+    result = {}
+    for size in sizes:
+        filenames = glob.glob("./results/Bcube/{}_*".format(size))
+        if filenames:
+            filenames.sort()
+            print(filenames[-1])
+            result[size] = load_file(filename=filenames[-1])
     x, data = transfer_result(result, index=0)
+
+    op_result = load_and_print(
+        glob.glob("./results/Bcube/op_*".format(size))[-1])
+    x2, data2 = transfer_result(op_result, index=0)
+
+    data.update(data2)
+
+    for k in data:
+        data[k] = data[k][:len(x)]
+
     add_zero(x, data)
+    data['ROR'] = data['RORP']
+    data['PARC'] = data['heuristic']
     print(x, data)
-    draw_plot(x, data, legends=['optimal', 'RORP',
-                                'heuristic'], save_file_name='bcube')
+    draw_plot(x, data, legends=['optimal', 'ROR',
+                                'PARC'], save_file_name='bcube')
 
 
 def load_and_print(filename):
@@ -134,19 +154,24 @@ def main_k():
 
     color = 'tab:red'
     ax1.set_xlabel("k")
-    ax1.set_ylabel("Number of Accepted Requests", color=color)
+    ax1.set_ylabel("Accepted Requests", color=color)
     ax1.set_ylim(60, 100)
-    ax1.plot(x, rorp_y, color=color, linestyle='--', marker='^', linewidth=2)
+    l1 = ax1.plot(x, rorp_y, color=color, linestyle='--',
+                  marker='^', linewidth=2, label='Accepted Requests')
     ax1.tick_params(axis='y', labelcolor=color)
 
     ax2 = ax1.twinx()
 
     color = 'tab:blue'
-    ax2.set_ylabel("Time (s)", color=color)
-    ax2.plot(x, rorp_time_y, color=color,
-             linestyle=':', marker='x', linewidth=1.5)
+    ax2.set_ylabel("Running Time (s)", color=color)
+    l2 = ax2.plot(x, rorp_time_y, color=color, linestyle=':',
+                  marker='x', linewidth=1.5, label='Running time')
     ax2.set_ylim(200, 1800)
     ax2.tick_params(axis='y', labelcolor=color)
+
+    lns = l1+l2
+    labs = [l.get_label() for l in lns]
+    ax1.legend(lns, labs, loc='lower right')
 
     fig.tight_layout()
     plt.grid(linestyle='--')
@@ -217,4 +242,4 @@ def draw_plot(x, data,
 
 
 if __name__ == '__main__':
-    main_fattree()
+    main_compare_latency()

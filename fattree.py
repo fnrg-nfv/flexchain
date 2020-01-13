@@ -6,9 +6,9 @@ from ttictoc import tic, toc
 import os
 
 
-def fattree_eval():
+def main():
     # parameter init
-    config.PARA = True
+    config.state = config.Setting.normal
     config.GC_BFS = False
 
     # model init
@@ -16,9 +16,7 @@ def fattree_eval():
     origin_sfc_list = model.sfc_list
     model.draw_topo()
 
-    iter_times = 10
-    unit = 40
-    sizes = [unit * i + unit for i in range(iter_times)]
+    sizes = [20 * (i + 1) for i in range(10)]
     result = {}
     temple_files = []
 
@@ -29,7 +27,7 @@ def fattree_eval():
             "./results/{}/{}_{}".format(model.topo.name, size, current_time()))
         save_obj(result[size], temple_files[-1])
 
-    filename = "./results/{}/{}".format(model.topo.name, current_time())
+    filename = "./results/{}/total_{}".format(model.topo.name, current_time())
     save_obj(result, filename)
 
     for temple_file in temple_files:
@@ -43,13 +41,13 @@ def iteration(model: Model):
     model.clear()
     result['heuristic'] = greedy_para(model)
 
-    model.clear()
-    config.K = 4096
-    result['optimal'] = linear_programming(model)
+    # model.clear()
+    # config.K = 4096
+    # result['optimal'] = linear_programming(model)
 
     model.clear()
     config.K = 1024
-    linear_programming(model)
+    result['optimal'] = linear_programming(model)
     result['RORP'] = rorp(model)
 
     print_dict_result(result, model)
@@ -58,4 +56,4 @@ def iteration(model: Model):
 
 if __name__ == "__main__":
     with TicToc('test'):
-        fattree_eval()
+        main()
