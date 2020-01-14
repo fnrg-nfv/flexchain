@@ -34,14 +34,14 @@ def main_compare():
     result = load_and_print(filenames[-1])
 
     x, data = transfer_result(result, 0)
-    data['Ours+PARC'] = data['heuristic']
-    data['PARABOX+naïve'] = data['PARABOX-naïve']
+    data['FlexChain+PARC'] = data['heuristic']
+    data['Parabox+naïve'] = data['PARABOX-naïve']
     data['NFP+naïve'] = data['NFP-naïve']
 
     print(data)
 
     draw_plot(x, data, save_file_name='compare_sfc', legends=[
-              'Chain w/o parallelism', 'PARABOX+naïve', 'NFP+naïve', 'Ours+PARC'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^')
+              'Chain w/o parallelism', 'Parabox+naïve', 'NFP+naïve', 'FlexChain+PARC'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^')
 
 
 def main_compare_latency():
@@ -50,14 +50,14 @@ def main_compare_latency():
     result = load_and_print(filenames[-1])
 
     x, data = transfer_result(result, 2)
-    data['Ours+PARC'] = data['heuristic']
-    data['PARABOX+naïve'] = data['PARABOX-naïve']
+    data['FlexChain+PARC'] = data['heuristic']
+    data['Parabox+naïve'] = data['PARABOX-naïve']
     data['NFP+naïve'] = data['NFP-naïve']
 
     print(data)
 
     draw_plot(x, data, ylabel='Average SFC Latency (ms)', save_file_name='compare_latency', legends=[
-              'Chain w/o parallelism', 'PARABOX+naïve', 'NFP+naïve', 'Ours+PARC'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^')
+              'Chain w/o parallelism', 'Parabox+naïve', 'NFP+naïve', 'FlexChain+PARC'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^')
 
 
 def main_vl2():
@@ -102,19 +102,43 @@ def main_bcube():
             filenames.sort()
             print(filenames[-1])
             result[size] = load_file(filename=filenames[-1])
+
+    filenames = glob.glob("./results/Bcube/total_01*")
+    filenames.sort()
+    result2 = load_and_print(filenames[-1])
+    result.update(result2)
+
     x, data = transfer_result(result, index=0)
 
     op_result = load_and_print(
-        glob.glob("./results/Bcube/op_*".format(size))[-1])
+        glob.glob("./results/Bcube/op_*")[-1])
     x2, data2 = transfer_result(op_result, index=0)
 
     data.update(data2)
 
-    for k in data:
-        data[k] = data[k][:len(x)]
-
     add_zero(x, data)
     data['ROR'] = data['RORP']
+    data['PARC'] = data['heuristic']
+    print(x, data)
+    draw_plot(x, data, legends=['optimal', 'ROR',
+                                'PARC'], save_file_name='bcube')
+
+def main_bcube_grtt():
+
+    filenames = glob.glob("./results/Bcube/total_grp256_*")
+    filenames.sort()
+    result = load_and_print(filenames[-1])
+
+    x, data = transfer_result(result, index=0)
+
+    op_result = load_and_print(
+        glob.glob("./results/Bcube/op_*")[-1])
+    x2, data2 = transfer_result(op_result, index=0)
+
+    data.update(data2)
+
+    add_zero(x, data)
+    data['ROR'] = data['grp']
     data['PARC'] = data['heuristic']
     print(x, data)
     draw_plot(x, data, legends=['optimal', 'ROR',

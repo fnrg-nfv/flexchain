@@ -20,14 +20,16 @@ def main():
     result = {}
     temple_files = []
 
+    sizes=[160]
+
     for size in sizes:
         model.sfc_list = origin_sfc_list[:size]
         result[size] = iteration(model)
         temple_files.append(
-            "./results/{}/{}_grp256_{}".format(model.topo.name, size, current_time()))
+            "./results/{}/{}_{}".format(model.topo.name, size, current_time()))
         save_obj(result[size], temple_files[-1])
 
-    filename = "./results/{}/total_grp256_{}".format(model.topo.name, current_time())
+    filename = "./results/{}/total160_{}".format(model.topo.name, current_time())
     save_obj(result, filename)
 
     for temple_file in temple_files:
@@ -46,8 +48,7 @@ def iteration(model: Model):
     # result['optimal'] = linear_programming(model)
 
     model.clear()
-    config.K = 256
-    # config.K = 1024
+    config.K = 1024
     result['optimal'] = linear_programming(model)
     # result['RORP'] = rorp(model)
     result['grp'] = rounding_to_integral(model, rounding_greedy)
