@@ -50,8 +50,8 @@ def iteration(model: Model):
     model.clear()
     config.K = 1024
     result['optimal'] = linear_programming(model)
-    # result['RORP'] = rorp(model)
-    result['grp'] = rounding_to_integral(model, rounding_greedy)
+    result['RORP'] = rorp(model)
+    # result['grp'] = rounding_to_integral(model, rounding_greedy)
 
     print_dict_result(result, model)
     return result

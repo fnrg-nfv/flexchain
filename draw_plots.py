@@ -266,4 +266,4 @@ def draw_plot(x, data,
 
 
 if __name__ == '__main__':
-    main_compare_latency()
+    main_bcube()
