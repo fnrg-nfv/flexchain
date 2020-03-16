@@ -136,6 +136,7 @@ def main_bcube():
     draw_plot(x, data, legends=['optimal', 'ROR',
                                 'PARC'], save_file_name='bcube')
 
+
 def main_bcube_grtt():
 
     filenames = glob.glob("./results/Bcube/total_grp256_*")
@@ -271,7 +272,8 @@ def draw_plot(x, data,
               linestyles=['-', '--', ':'],
               x2ticks=True,
               x_formatter="%d",
-              y_formatter="%d"):
+              y_formatter="%d",
+              legend_bbox_to_anchor=None):
 
     color_cy = cycle(colors)
     marker_cy = cycle(markers)
@@ -288,7 +290,10 @@ def draw_plot(x, data,
     plt.xlabel(xlabel, font)
     plt.ylabel(ylabel, font)
     plt.title(title)
-    plt.legend(prop=legendfont)
+    if legend_bbox_to_anchor:
+        plt.legend(bbox_to_anchor=legend_bbox_to_anchor, prop=legendfont)
+    else:
+        plt.legend(prop=legendfont)
 
     ax = plt.gca()
     ax.yaxis.grid(True, linestyle='--')
