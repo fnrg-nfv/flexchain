@@ -4,10 +4,23 @@ import glob
 import pickle
 from itertools import cycle
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 from scipy.interpolate import make_interp_spline, BSpline
 
 from para_placement.helper import *
+
+font = {
+    'family': 'Times New Roman',
+    'weight': 'normal',
+    'size':   17,
+}
+
+legendfont = {
+    'family': 'Times New Roman',
+    'weight': 'normal',
+    'size':   14,
+}
 
 
 def main_time():
@@ -57,7 +70,7 @@ def main_compare_latency():
     print(data)
 
     draw_plot(x, data, ylabel='Average SFC Latency (ms)', save_file_name='compare_latency', legends=[
-              'Chain w/o parallelism', 'Parabox+naïve', 'NFP+naïve', 'FlexChain+PARC'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^')
+              'Chain w/o parallelism', 'Parabox+naïve', 'NFP+naïve', 'FlexChain+PARC'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^', y_formatter='%.2f')
 
 
 def main_vl2():
@@ -177,25 +190,32 @@ def main_k():
     fig, ax1 = plt.subplots()
 
     color = 'tab:red'
-    ax1.set_xlabel("k")
-    ax1.set_ylabel("Accepted Requests", color=color)
+    ax1.set_xlabel("k", font)
+    ax1.set_ylabel("Number of Accepted Requests", font, color=color)
     ax1.set_ylim(60, 100)
     l1 = ax1.plot(x, rorp_y, color=color, linestyle='--',
-                  marker='^', linewidth=2, label='Accepted Requests')
+                  marker='^', linewidth=2, label='Accepted Requests', ms=8)
     ax1.tick_params(axis='y', labelcolor=color)
 
     ax2 = ax1.twinx()
 
     color = 'tab:blue'
-    ax2.set_ylabel("Running Time (s)", color=color)
+    ax2.set_ylabel("Running Time (s)", font, color=color)
     l2 = ax2.plot(x, rorp_time_y, color=color, linestyle=':',
-                  marker='x', linewidth=1.5, label='Running time')
+                  marker='x', linewidth=1.5, label='Running Time', ms=8)
     ax2.set_ylim(200, 1800)
     ax2.tick_params(axis='y', labelcolor=color)
 
+    ax1.set_xticklabels(ax1.get_xticks(), font)
+    ax1.set_yticklabels(ax1.get_yticks(), font)
+    ax2.set_yticklabels(ax2.get_yticks(), font)
+    ax1.xaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))
+    ax1.yaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))
+    ax2.yaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))
+
     lns = l1+l2
     labs = [l.get_label() for l in lns]
-    ax1.legend(lns, labs, loc='lower right')
+    ax1.legend(lns, labs, loc='lower right', prop=legendfont)
 
     fig.tight_layout()
     plt.grid(linestyle='--')
@@ -204,6 +224,18 @@ def main_k():
         plt.savefig('eps/k.eps', format='eps')
     # Note: plt.savefig() must before plt.show()
     plt.show()
+
+
+def main_parallel_overhead():
+    x = [64, 128, 256, 512, 1024, 1500]
+    y1 = [206, 214, 367, 398, 559, 755]
+    y2 = [184, 194, 286, 302, 376, 441]
+
+    # plt.xticks( range(6), (64, 128, 256, 512, 1024, 1500) )
+    plt.grid(linestyle='--')
+    draw_plot(x, {'Copy': y1, 'Merge': y2}, save_file_name="parallel_overhead", xlabel='Packet size (bytes)',
+              ylabel='Average time overhead(ns)', colors='rg', markers='so',
+              linestyles=['-', '-'], x2ticks=False)
 
 
 def transfer_result(result, index=-1):
@@ -232,11 +264,14 @@ def draw_plot(x, data,
               legends=[],
               save_file_name='',
               xlabel='Number of SFC Requests',
-              ylabel="Accepted Requests",
+              ylabel="Number of Accepted Requests",
               title='',
               colors='brgcmk',
               markers='s^ox',
-              linestyles=['-', '--', ':']):
+              linestyles=['-', '--', ':'],
+              x2ticks=True,
+              x_formatter="%d",
+              y_formatter="%d"):
 
     color_cy = cycle(colors)
     marker_cy = cycle(markers)
@@ -244,14 +279,23 @@ def draw_plot(x, data,
     if not legends:
         legends = [k for k in data]
     for legend in legends:
-        plt.plot(x, data[legend], marker=next(marker_cy), label=legend, color=next(color_cy), linewidth=2,
+        plt.plot(x, data[legend], marker=next(marker_cy), label=legend, color=next(color_cy), linewidth=2, ms=8,
                  linestyle=next(linestyle_cy))
 
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    if x2ticks:
+        plt.xticks(x)
+
+    plt.xlabel(xlabel, font)
+    plt.ylabel(ylabel, font)
     plt.title(title)
-    plt.grid(linestyle='--')
-    plt.legend()
+    plt.legend(prop=legendfont)
+
+    ax = plt.gca()
+    ax.yaxis.grid(True, linestyle='--')
+    ax.set_xticklabels(ax.get_xticks(), font)
+    ax.set_yticklabels(ax.get_yticks(), font)
+    ax.xaxis.set_major_formatter(ticker.FormatStrFormatter(x_formatter))
+    ax.yaxis.set_major_formatter(ticker.FormatStrFormatter(y_formatter))
 
     if save_file_name:
         write = True
@@ -266,4 +310,4 @@ def draw_plot(x, data,
 
 
 if __name__ == '__main__':
-    main_bcube()
+    main_compare_latency()
