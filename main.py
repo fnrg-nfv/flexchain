@@ -50,11 +50,12 @@ def _tp_parabox(cut, strategy):
 
 
 if __name__ == '__main__':
-    print(_tp_parabox(1, [0, 1, 0, 1]))  # 3
-    print(_tp_parabox(4, [0, 1, 0, 1]))  # 2
-    print(_tp_parabox(1, [1, 1, 1, 0, 1, 1, 0, 1, 0]))  # 8
-    print(_tp_parabox(4, [1, 1, 1, 0, 1, 1, 0, 1, 0]))  # 10
-    print(_tp_parabox(-1, [1, 1, 1, 0, 1, 1, 0, 1, 0]))  # 4
-    print(_tp_parabox(2, [1, 1, 1, 0]))  # 4
-    # with TicToc("test"):
-    #     create_testcase()
+    vl2_topo = topology.vl2_topo(
+        port_num_of_aggregation_switch=16, port_num_of_tor_for_server=4)
+    vnf_set = generate_vnf_set(size=30)
+    vnf_list = []
+    for j in range(7):
+        vnf_list.append(random.choice(vnf_set))
+    print(time())
+    ParaAnalyzer(vnf_list)
+    print(time())
