@@ -3,6 +3,7 @@ from para_placement import topology
 from para_placement.helper import *
 from para_placement.solution import *
 from ttictoc import tic, toc
+import time
 
 
 def create_testcase():
@@ -50,12 +51,17 @@ def _tp_parabox(cut, strategy):
 
 
 if __name__ == '__main__':
-    vl2_topo = topology.vl2_topo(
-        port_num_of_aggregation_switch=16, port_num_of_tor_for_server=4)
-    vnf_set = generate_vnf_set(size=30)
-    vnf_list = []
-    for j in range(7):
-        vnf_list.append(random.choice(vnf_set))
-    print(time())
-    ParaAnalyzer(vnf_list)
-    print(time())
+    vnf_set = generate_vnf_set(size=100)
+    total = 0
+    cnt = 10000
+    current_usec = lambda: int(round(time.time() * 1000000))
+    for i in range(cnt):
+        vnf_list = []
+        for j in range(7):
+            vnf_list.append(random.choice(vnf_set))
+        t1 = current_usec()
+        ParaAnalyzer(vnf_list)
+        t2 = current_usec()
+        total += t2 - t1
+    print(total/cnt)
+
