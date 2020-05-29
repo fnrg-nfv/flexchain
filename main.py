@@ -52,6 +52,7 @@ def _tp_parabox(cut, strategy):
 if __name__ == '__main__':
     vl2_topo = topology.vl2_topo(
         port_num_of_aggregation_switch=16, port_num_of_tor_for_server=4)
+    print(vl2_topo.number_of_nodes())
     vnf_set = generate_vnf_set(size=30)
     vnf_list = []
     for j in range(7):

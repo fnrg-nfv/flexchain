@@ -8,7 +8,8 @@ from compare_eval import compare_eval
 
 def main():
     config.GC_BFS = False
-    model = load_file("testcase/compare_large")
+    # model = load_file("testcase/compare_large")
+    model = load_file("testcase/vl2_16_4")
     origin_sfc_list = model.sfc_list
     model.draw_topo()
 
@@ -24,5 +25,5 @@ def main():
 
 
 if __name__ == '__main__':
-    with TicToc("test"):
+    with Timer(verbose_msg=f'[time][{time.time()}] Elapsed time: {{}}'):
         main()

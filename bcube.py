@@ -58,5 +58,5 @@ def iteration(model: Model):
 
 
 if __name__ == "__main__":
-    with TicToc('test'):
+    with Timer(verbose_msg=f'[test] Elapsed time: {{}}'):
         main()

@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import collections
 import os
 import glob
@@ -71,6 +72,21 @@ def main_compare_latency():
 
     draw_plot(x, data, ylabel='Average SFC Latency (ms)', save_file_name='compare_latency', legends=[
               'Chain w/o parallelism', 'Parabox+naïve', 'NFP+naïve', 'FlexChain+PARC'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^', y_formatter='%.2f')
+
+def main_compare_resource():
+    filenames = glob.glob("./results/compare/total*")
+    filenames.sort()
+    result = load_and_print(filenames[-1])
+
+    x, data = transfer_result(result, 2)
+    data['FlexChain+PARC'] = data['heuristic']
+    data['Parabox+naïve'] = data['PARABOX-naïve']
+    data['NFP+naïve'] = data['NFP-naïve']
+
+    # print(data)
+
+    # draw_plot(x, data, ylabel='Average SFC Latency (ms)', save_file_name='compare_latency', legends=[
+    #           'Chain w/o parallelism', 'Parabox+naïve', 'NFP+naïve', 'FlexChain+PARC'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^', y_formatter='%.2f')
 
 
 def main_vl2():
@@ -315,4 +331,4 @@ def draw_plot(x, data,
 
 
 if __name__ == '__main__':
-    main_compare_latency()
+    main_compare_resource()

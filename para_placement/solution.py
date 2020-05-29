@@ -7,14 +7,14 @@ from para_placement.evaluation import *
 from para_placement.model import *
 from para_placement.cg import generate_configurations, generate_configuration_greedy_dfs
 from progress.bar import PixelBar
-from ttictoc import TicToc
+from ttictoc import Timer
 
 
 def linear_programming(model: Model) -> (float, int, float, float):
     print(">>> Start LP <<<")
     problem = LpProblem("VNF Placement", LpMaximize)
 
-    with TicToc("GenC"), PixelBar("Generating configuration sets") as bar:
+    with Timer(verbose_msg=f'[GenC] Elapsed time: {{}}'), PixelBar("Generating configuration sets") as bar:
         bar.max = len(model.sfc_list)
         for sfc in model.sfc_list:
             sfc.configurations = generate_configurations(model.topo, sfc)
@@ -31,7 +31,7 @@ def linear_programming(model: Model) -> (float, int, float, float):
     print("Number of LP Variables: {}\tValid SFC: {}".format(
         config_num, valid_sfc_num))
 
-    with TicToc("LP Solving"):
+    with Timer(verbose_msg=f'[LP Solving] Elapsed time: {{}}'):
         # Objective function
         problem += lpSum((configuration.var for configuration in sfc.configurations)
                          for sfc in model.sfc_list), "Total number of accepted requests"
@@ -236,7 +236,7 @@ def greedy_dc(model: Model) -> (float, int, float, float):
     sfcs = model.sfc_list[:]
     sfcs.sort(key=lambda x: x.computing_resources_sum)
 
-    with TicToc("Greedy"), PixelBar("SFC placement") as bar:
+    with Timer(verbose_msg=f'[Greedy] Elapsed time: {{}}'), PixelBar("SFC placement") as bar:
         bar.max = len(sfcs)
         for sfc in sfcs:
             configuration = generate_configuration_greedy_dfs(topo, sfc)
@@ -257,9 +257,9 @@ def greedy_para(model: Model):
         1. Sort SFCs by its computing resources in the ascending order.
         2. For every sfc, compute its merged chain.
         3. Find the first path whose resources can fulfill the requirement of sfc.
-        4. If so, accept the configuraiton
+        4. If so, accept the configuration
         5. Otherwise, try to find the path for the origin sfc
-        6. If so, accept the configuraiton
+        6. If so, accept the configuration
         7. Otherwise, refuse the sfc
     """
     print(">>> Para Greedy Start <<<")
@@ -268,7 +268,7 @@ def greedy_para(model: Model):
     sfcs = model.sfc_list[:]
     sfcs.sort(key=lambda sfc: sfc.computing_resources_sum)
 
-    with TicToc("ParaGreedy"), PixelBar("SFC placement") as bar:
+    with Timer(verbose_msg=f'[ParaGreedy] Elapsed time: {{}}'), PixelBar("SFC placement") as bar:
         bar.max = len(sfcs)
         for sfc in sfcs:
             optimal_sfc = SFC(

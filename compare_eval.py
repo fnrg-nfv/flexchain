@@ -10,12 +10,6 @@ def compare_eval(model: Model, k=256):
     print("PLACEMENT MAIN")
     result = dict()
 
-    # model.clear()
-    # config.K = k
-    # config.state = config.Setting.normal
-    # result['optimal'] = linear_programming(model)
-    # result['RORP'] = rorp(model)
-
     model.clear()
     config.state = config.Setting.normal
     result['heuristic'] = greedy_para(model)
@@ -55,5 +49,5 @@ def main():
 
 
 if __name__ == '__main__':
-    with TicToc("test"):
+    with Timer(verbose_msg=f'[test] Elapsed time: {{}}'):
         main()
