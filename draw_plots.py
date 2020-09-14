@@ -4,6 +4,7 @@ import os
 import glob
 import pickle
 from itertools import cycle
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
@@ -72,6 +73,7 @@ def main_compare_latency():
 
     draw_plot(x, data, ylabel='Average SFC Latency (ms)', save_file_name='compare_latency', legends=[
               'Chain w/o parallelism', 'Parabox+naïve', 'NFP+naïve', 'FlexChain+PARC'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^', y_formatter='%.2f')
+
 
 def main_compare_resource():
     filenames = glob.glob("./results/compare/total*")
@@ -207,7 +209,9 @@ def main_k():
     fig, ax1 = plt.subplots()
 
     color = 'tab:red'
-    ax1.set_xlabel("k", font)
+    k_font = font.copy()
+    k_font['style'] = 'italic'
+    ax1.set_xlabel("k", k_font)
     ax1.set_ylabel("Number of Accepted Requests", font, color=color)
     ax1.set_ylim(60, 100)
     l1 = ax1.plot(x, rorp_y, color=color, linestyle='--',
@@ -331,4 +335,4 @@ def draw_plot(x, data,
 
 
 if __name__ == '__main__':
-    main_compare_resource()
+    main_k()

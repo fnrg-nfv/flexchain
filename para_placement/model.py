@@ -32,47 +32,65 @@ class VNF(BaseObject):
     def __str__(self):
         return "(%f, %d, %s, %s)" % (self.latency, self.computing_resource, self.read_fields, self.write_fields)
 
-    @staticmethod
-    def para_merge(vnf1, vnf2):
-        merged = VNF(max(vnf1.latency, vnf2.latency),
-                     vnf1.computing_resource + vnf2.computing_resource,
-                     set.union(vnf1.read_fields, vnf2.read_fields),
-                     set.union(vnf2.write_fields, vnf2.write_fields))
+    def para_merge(self, vnf):
+        merged = VNF(max(self.latency, vnf.latency),
+                     self.computing_resource + vnf.computing_resource,
+                     set.union(self.read_fields, vnf.read_fields),
+                     set.union(self.write_fields, vnf.write_fields))
         return merged
 
-    @staticmethod
-    def parallelizable_analysis(vnf1, vnf2):
+    def parallelizable_analysis(self, vnf):
         """Analysis whether two vnf can execute parallelism.
 
         Returns:
-        0 for packet copy
-        1 for no need packet copy
-        -1 for cannot parallelism
+        0: need packet copy
+        1: don't need packet copy
+        -1: cannot run in parallel
         """
-        nf1_read_fields = vnf1.read_fields
-        nf1_write_fields = vnf1.write_fields
-        nf2_read_fields = vnf2.read_fields
-        nf2_write_fields = vnf2.write_fields
+        nf1_read_fields = self.read_fields
+        nf1_write_fields = self.write_fields
+        nf2_read_fields = vnf.read_fields
+        nf2_write_fields = vnf.write_fields
 
-        # analyse read after write
+        # analyze read after write
         for fields1 in nf1_write_fields:
             for fields2 in nf2_read_fields:
                 if fields1 == fields2:
                     return -1  # cannot parallelism
 
-        # analyse write after read
+        # analyze write after read
         for fields1 in nf1_read_fields:
             for fields2 in nf2_write_fields:
                 if fields1 == fields2:
                     return 0  # need packet copy
 
-        # analyse write after write
+        # analyze write after write
         for fields1 in nf1_write_fields:
             for fields2 in nf2_write_fields:
                 if fields1 == fields2:
                     return 0  # need packet copy
 
         return 1  # perfect parallelism
+
+class SimpleVNF(VNF):
+    def __init__(self, latency: float, computing_resource: int):
+        VNF.__init__(self, latency, computing_resource)
+
+    def para_merge(self, vnf):
+        # TODO: not completed
+        return
+
+    def parallelizable_analysis(self, vnf):
+        """Analysis whether two vnf can execute parallelism.
+
+        Returns:
+        0: need packet copy
+        1: don't need packet copy
+        -1: cannot run in parallel
+        """
+        # TODO: not completed
+        return
+
 
 
 class SFC(BaseObject):
@@ -202,11 +220,11 @@ def generate_vnf_set(size: int = 30) -> List[VNF]:
         computing_resource = SFC_CONFIG.vnf_cpu()
         read_fields = set()
         for item in readable_fields:
-            if random.choice([True, False, False]):
+            if random.choice([True, False, False, False]):
                 read_fields.add(item)
         write_fields = set()
         for item in writeable_fields:
-            if random.choice([True, False, False]):
+            if random.choice([True, False, False, False]):
                 write_fields.add(item)
         vnf_list.append(VNF(latency, computing_resource,
                             read_fields, write_fields))
@@ -367,11 +385,11 @@ class ParaAnalyzer:
                 self.opt_latency, self.opt_strategy, self.opt_vnf_list = latency, strategy, vnf_list
         else:
             # branch 1: parallelizable
-            if VNF.parallelizable_analysis(vnf_list[index], vnf_list[index + 1]) >= 0:
+            if vnf_list[index].parallelizable_analysis(vnf_list[index + 1]) >= 0:
                 new_vnf_list = vnf_list[:]
                 vnf1 = new_vnf_list.pop(index)
                 vnf2 = new_vnf_list.pop(index)
-                merged_vnf = VNF.para_merge(vnf1, vnf2)
+                merged_vnf = vnf1.para_merge(vnf2)
                 new_vnf_list.insert(index, merged_vnf)
 
                 new_strategy = strategy[:]
