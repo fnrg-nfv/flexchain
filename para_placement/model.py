@@ -72,13 +72,25 @@ class VNF(BaseObject):
 
         return 1  # perfect parallelism
 
+
 class SimpleVNF(VNF):
     def __init__(self, latency: float, computing_resource: int):
         VNF.__init__(self, latency, computing_resource)
+        self.paraDict = dict()
 
     def para_merge(self, vnf):
         # TODO: not completed
-        return
+        ret = SimpleVNF(max(self.latency, vnf.latency),
+                        self.computing_resource + vnf.computing_resource)
+
+        ret.paraDict = self.paraDict.copy()
+        for vnf1 in vnf.paraDict:
+            if vnf1 in ret.paraDict:
+                ret.paraDict = min(ret.paraDict[vnf1], vnf.paraDict[vnf1])
+            else:
+                ret.paraDict = vnf.paraDict[vnf1]
+
+        return ret
 
     def parallelizable_analysis(self, vnf):
         """Analysis whether two vnf can execute parallelism.
@@ -88,9 +100,9 @@ class SimpleVNF(VNF):
         1: don't need packet copy
         -1: cannot run in parallel
         """
-        # TODO: not completed
-        return
-
+        if vnf in self.paraDict:
+            return self.paraDict[vnf]
+        return -1
 
 
 class SFC(BaseObject):
