@@ -15,13 +15,13 @@ from para_placement.helper import *
 font = {
     'family': 'Times New Roman',
     'weight': 'normal',
-    'size':   17,
+    'size': 17,
 }
 
 legendfont = {
     'family': 'Times New Roman',
     'weight': 'normal',
-    'size':   14,
+    'size': 14,
 }
 
 
@@ -56,7 +56,8 @@ def main_compare():
     print(data)
 
     draw_plot(x, data, save_file_name='compare_sfc', legends=[
-              'Chain w/o parallelism', 'Parabox+naïve', 'NFP+naïve', 'FlexChain+PARC'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^')
+        'Chain w/o parallelism', 'Parabox+naïve', 'NFP+naïve', 'FlexChain+PARC'], colors='ymcr',
+              linestyles=[':', ':', ':', '--'], markers='h x^')
 
 
 def main_compare_latency():
@@ -72,7 +73,8 @@ def main_compare_latency():
     print(data)
 
     draw_plot(x, data, ylabel='Average SFC Latency (ms)', save_file_name='compare_latency', legends=[
-              'Chain w/o parallelism', 'Parabox+naïve', 'NFP+naïve', 'FlexChain+PARC'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^', y_formatter='%.2f')
+        'Chain w/o parallelism', 'Parabox+naïve', 'NFP+naïve', 'FlexChain+PARC'], colors='ymcr',
+              linestyles=[':', ':', ':', '--'], markers='h x^', y_formatter='%.2f')
 
 
 def main_compare_resource():
@@ -125,7 +127,7 @@ def main_fattree():
 
 
 def main_bcube():
-    sizes = [20 * (i+1) for i in range(10)]
+    sizes = [20 * (i + 1) for i in range(10)]
     result = {}
     for size in sizes:
         filenames = glob.glob("./results/Bcube/{}_*".format(size))
@@ -156,7 +158,6 @@ def main_bcube():
 
 
 def main_bcube_grtt():
-
     filenames = glob.glob("./results/Bcube/total_grp256_*")
     filenames.sort()
     result = load_and_print(filenames[-1])
@@ -204,7 +205,7 @@ def main_k():
 
     rorp_y = np.array([result[i]['RORP'][0] for i in x])
     rorp_time_y = np.array([result[i]['RORP time'] for i in x])
-    print(x, rorp_y,  rorp_time_y)
+    print(x, rorp_y, rorp_time_y)
 
     fig, ax1 = plt.subplots()
 
@@ -234,7 +235,7 @@ def main_k():
     ax1.yaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))
     ax2.yaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))
 
-    lns = l1+l2
+    lns = l1 + l2
     labs = [l.get_label() for l in lns]
     ax1.legend(lns, labs, loc='lower right', prop=legendfont)
 
@@ -294,7 +295,6 @@ def draw_plot(x, data,
               x_formatter="%d",
               y_formatter="%d",
               legend_bbox_to_anchor=None):
-
     color_cy = cycle(colors)
     marker_cy = cycle(markers)
     linestyle_cy = cycle(linestyles)
