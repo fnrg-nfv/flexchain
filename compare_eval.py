@@ -11,7 +11,7 @@ def compare_eval(model: Model, k=256):
     result = dict()
 
     model.clear()
-    config.state = config.Setting.normal
+    config.state = config.Setting.flexchain
     result['heuristic'] = greedy_para(model)
 
     model.clear()

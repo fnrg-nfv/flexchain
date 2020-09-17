@@ -8,7 +8,7 @@ import os
 
 def main():
     # parameter init
-    config.state = config.Setting.normal
+    config.state = config.Setting.flexchain
     config.GC_BFS = False
 
     # model init

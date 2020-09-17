@@ -1,14 +1,11 @@
 #!/usr/bin/python3
-import collections
-import os
 import glob
-import pickle
+import os
 from itertools import cycle
-import matplotlib
+
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
-from scipy.interpolate import make_interp_spline, BSpline
 
 from para_placement.helper import *
 
@@ -207,7 +204,7 @@ def main_k():
     rorp_time_y = np.array([result[i]['RORP time'] for i in x])
     print(x, rorp_y, rorp_time_y)
 
-    fig, ax1 = plt.subplots()
+    fig, ax1 = plt.subplots(figsize=(6.4, 4.8))
 
     color = 'tab:red'
     k_font = font.copy()
@@ -239,7 +236,7 @@ def main_k():
     labs = [l.get_label() for l in lns]
     ax1.legend(lns, labs, loc='lower right', prop=legendfont)
 
-    fig.tight_layout()
+    # fig.tight_layout()
     plt.grid(linestyle='--')
 
     if input("Save this eps?(y/N)") == 'y':
@@ -294,10 +291,12 @@ def draw_plot(x, data,
               x2ticks=True,
               x_formatter="%d",
               y_formatter="%d",
-              legend_bbox_to_anchor=None):
+              legend_bbox_to_anchor=None,
+              show_legend=True):
     color_cy = cycle(colors)
     marker_cy = cycle(markers)
     linestyle_cy = cycle(linestyles)
+    plt.figure(figsize=(6.4, 4.8))
     if not legends:
         legends = [k for k in data]
     for legend in legends:
@@ -310,10 +309,11 @@ def draw_plot(x, data,
     plt.xlabel(xlabel, font)
     plt.ylabel(ylabel, font)
     plt.title(title)
-    if legend_bbox_to_anchor:
-        plt.legend(bbox_to_anchor=legend_bbox_to_anchor, prop=legendfont)
-    else:
-        plt.legend(prop=legendfont)
+    if show_legend:
+        if legend_bbox_to_anchor:
+            plt.legend(bbox_to_anchor=legend_bbox_to_anchor, prop=legendfont)
+        else:
+            plt.legend(prop=legendfont)
 
     ax = plt.gca()
     ax.yaxis.grid(True, linestyle='--')
@@ -334,5 +334,22 @@ def draw_plot(x, data,
     plt.show()
 
 
+def main_para_prob():
+    filenames = glob.glob("./results/para_prob/*")
+    filenames.sort()
+    result = load_and_print(filenames[-1])
+    x, data = transfer_result(result, index=0)
+    data['Base'] = [data['RORP'][0]] * len(data['RORP'])
+    data['ROR'] = data['RORP']
+    data['PARC'] = data['heuristic']
+    del data['RORP']
+    del data['heuristic']
+    for i in range(len(x)):
+        x[i] = round(x[i], 1)
+    print(x, data)
+    draw_plot(x, data, save_file_name='para_prob', x_formatter="%.1f", xlabel='Parallel Probability between NFs',
+              colors='krg', markers=' ^o', linestyles=['-', '--', ':'])
+
+
 if __name__ == '__main__':
-    main_k()
+    main_para_prob()

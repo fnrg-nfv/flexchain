@@ -33,10 +33,10 @@ GC_BFS = False
 
 
 class Setting(enum.Enum):
-    normal = 1
+    flexchain = 1
     nfp_naive = 2
     parabox_naive = 3
     no_para = 4
 
 
-state = Setting.normal
+state = Setting.flexchain
