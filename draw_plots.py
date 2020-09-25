@@ -292,11 +292,12 @@ def draw_plot(x, data,
               x_formatter="%d",
               y_formatter="%d",
               legend_bbox_to_anchor=None,
-              show_legend=True):
+              show_legend=True,
+              figsize=(6.4, 4.8)):
     color_cy = cycle(colors)
     marker_cy = cycle(markers)
     linestyle_cy = cycle(linestyles)
-    plt.figure(figsize=(6.4, 4.8))
+    plt.figure(figsize=figsize)
     if not legends:
         legends = [k for k in data]
     for legend in legends:
@@ -351,5 +352,49 @@ def main_para_prob():
               colors='krg', markers=' ^o', linestyles=['-', '--', ':'])
 
 
+def get_offline_data():
+    filenames = glob.glob("./results/VL2/total*")
+    filenames.sort()
+    result = load_and_print(filenames[-2])
+    x, data = transfer_result(result, index=0)
+    result2 = load_and_print(filenames[-1])
+    x2, data2 = transfer_result(result2, index=0)
+    data.update(data2)
+    add_zero(x, data)
+    data['ROR'] = data['RORP']
+    data['PARC'] = data['heuristic']
+    del data['optimal']
+    del data['RORP']
+    del data['heuristic']
+    for key in data:
+        data[key] = data[key][::2]
+    return data
+
+
+def main_online(alg='PARC'):
+    filenames = glob.glob("./results/online/*")
+    filenames.sort()
+    result = load_and_print(filenames[-1])
+    data = {}
+    for batch_size in result[alg]:
+        data[alg + '-' + str(batch_size)] = result[alg][batch_size]
+
+    x = [i for i in range(0, 201, 40)]
+    for key in data:
+        new_entry = []
+        cur = 0
+        x_i = 0
+        for size in data[key]:
+            if size >= x[x_i]:
+                new_entry.append(cur)
+                x_i += 1
+            cur += data[key][size]
+        new_entry.append(cur)
+        data[key] = new_entry
+    data[alg + '-offline'] = get_offline_data()[alg]
+    draw_plot(x, data, save_file_name='online-' + alg, linestyles=[':', ':', ':', '--'], markers='s^x ', colors='bmcr')
+
+
 if __name__ == '__main__':
-    main_para_prob()
+    main_online(alg='PARC')
+    main_online(alg='ROR')

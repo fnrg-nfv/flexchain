@@ -12,7 +12,7 @@ def compare_eval(model: Model, k=256):
 
     model.clear()
     config.state = config.Setting.flexchain
-    result['heuristic'] = greedy_para(model)
+    result['heuristic'] = PARC(model)
 
     model.clear()
     config.state = config.Setting.no_para

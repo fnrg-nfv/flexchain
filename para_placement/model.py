@@ -1,5 +1,5 @@
+import copy
 import heapq
-import sys
 import pickle
 import random
 import string
@@ -181,7 +181,7 @@ class Model(BaseObject):
                             "C {}: {}\t{}\n".format(configuration.name, configuration.var.varValue, configuration))
             output.close()
 
-    def get_accepted_sfc_list(self):
+    def get_accepted_sfc_list(self) -> List[SFC]:
         return list(filter(lambda s: s.accepted_configuration is not None, self.sfc_list))
 
     def clear(self):
@@ -236,6 +236,23 @@ class Model(BaseObject):
         print("rej:", rej, "para:", para, "acc:", acc)
         print("sum lat avg:", sum_lat / len(self.sfc_list))
         print("opt lat avg:", sum_opt_lat / len(self.sfc_list))
+
+    def reduce(self):
+        accepted_sfc_list = self.get_accepted_sfc_list()
+
+        sub_model = Model(copy.deepcopy(self.topo), [])
+        # computing resource reduction
+        for index, info in sub_model.topo.nodes.data():
+            info['computing_resource'] -= sum(sfc.accepted_configuration.computing_resource[index]
+                                              for sfc in accepted_sfc_list
+                                              if index in sfc.accepted_configuration.computing_resource)
+        # throughput reduction
+        for start, end, info in sub_model.topo.edges.data():
+            info['bandwidth'] -= sum(sfc.throughput * sfc.accepted_configuration.edges[(start, end)]
+                                     for sfc in accepted_sfc_list
+                                     if (start, end) in sfc.accepted_configuration.edges)
+
+        return sub_model
 
 
 # TODO: readable fields and writeable fields should be weighted or sth else.

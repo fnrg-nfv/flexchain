@@ -27,7 +27,7 @@ def main():
         result = {}
         model.clear()
         tic()
-        result['greedy'] = greedy_para(model)
+        result['greedy'] = PARC(model)
         result['greedy time'] = toc()
 
         print_dict_result(result, model)
@@ -41,7 +41,7 @@ def main():
         model.clear()
         tic()
         result['optimal'] = linear_programming(model)
-        result['RORP'] = rorp(model)
+        result['RORP'] = ROR(model)
         result['RORP time'] = toc()
 
         print_dict_result(result, model) 

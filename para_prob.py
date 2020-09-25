@@ -39,12 +39,12 @@ def iteration(model: Model):
     result = {}
 
     model.clear()
-    result['heuristic'] = greedy_para(model)
+    result['heuristic'] = PARC(model)
 
     config.K = 256
     model.clear()
     linear_programming(model)
-    result['RORP'] = rorp(model)
+    result['RORP'] = ROR(model)
 
     return result
 

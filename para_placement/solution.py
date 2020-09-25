@@ -1,13 +1,10 @@
-import copy
+from progress.bar import PixelBar
+from pulp import value, LpMaximize, LpContinuous, LpVariable, LpProblem, lpSum
+from ttictoc import Timer
 
-# from pulp import *
-from pulp import value, LpContinuous, LpMaximize, LpContinuous, LpVariable, LpProblem, lpSum
-
+from para_placement.cg import generate_configurations, generate_configuration_greedy_dfs
 from para_placement.evaluation import *
 from para_placement.model import *
-from para_placement.cg import generate_configurations, generate_configuration_greedy_dfs
-from progress.bar import PixelBar
-from ttictoc import Timer
 
 
 def linear_programming(model: Model) -> (float, int, float, float):
@@ -146,7 +143,7 @@ def rounding_greedy(model: Model):
                 sfc.accepted_configuration = None
 
     if not model.get_accepted_sfc_list():
-        greedy_para(model)
+        PARC(model)
 
 
 # recursively
@@ -183,7 +180,7 @@ def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (floa
     return obj_val, accept_sfc_number, latency, model.compute_resource_utilization()
 
 
-def rorp(model: Model):
+def ROR(model: Model):
     return rounding_to_integral(model, rounding_one)
 
 
@@ -253,7 +250,7 @@ def greedy_dc(model: Model) -> (float, int, float, float):
     return obj_val, accept_sfc_number, latency, model.compute_resource_utilization()
 
 
-def greedy_para(model: Model):
+def PARC(model: Model):
     """
         1. Sort SFCs by its computing resources in the ascending order.
         2. For every sfc, compute its merged chain.
