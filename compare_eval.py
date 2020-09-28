@@ -11,8 +11,8 @@ def compare_eval(model: Model, k=256):
     result = dict()
 
     model.clear()
-    config.state = config.Setting.normal
-    result['heuristic'] = greedy_para(model)
+    config.state = config.Setting.flexchain
+    result['heuristic'] = PARC(model)
 
     model.clear()
     config.state = config.Setting.no_para

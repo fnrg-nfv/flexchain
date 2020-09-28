@@ -1,4 +1,4 @@
-import copy
+# configuration generation
 
 from pulp import *
 
@@ -33,7 +33,8 @@ def _generate_configurations_for_one_route_dc(topo: nx.Graph, route: List[int], 
                       idx, placement in enumerate(placement_set)]
 
     def computing_resource_check(c, topo):
-        return all(c.computing_resource[node] <= topo.nodes[node]['computing_resource']for node in c.computing_resource)
+        return all(
+            c.computing_resource[node] <= topo.nodes[node]['computing_resource'] for node in c.computing_resource)
 
     configurations = [
         c for c in configurations if computing_resource_check(c, topo) and c.get_latency() <= sfc.latency]
@@ -49,7 +50,7 @@ def _bfs_route(topo: nx.Graph, s, d, sfc: SFC) -> (List, float):
     queue = [([s], 0)]
     passed_node = [s]
     servers = [node for node in topo.nodes if topo.nodes[node]
-               ['computing_resource'] > 0]
+    ['computing_resource'] > 0]
     if d in servers:
         servers.remove(d)
 
@@ -99,13 +100,13 @@ def _generate_configurations_permutation(topo: nx.Graph, sfc: SFC):
     sfc_min_usage = min(vnf.computing_resource for vnf in sfc.vnf_list)
     sfc_max_usage = max(vnf.computing_resource for vnf in sfc.vnf_list)
     servers = [node for node in topo.nodes if topo.nodes[node]
-               ['computing_resource'] >= sfc_min_usage]
+    ['computing_resource'] >= sfc_min_usage]
     servers.sort(
         key=lambda node: topo.nodes[node]['computing_resource'], reverse=True)
     top_ratio = sum(topo.nodes[server]['computing_resource'] for server in servers[:len(
         sfc.vnf_list)]) / sfc.computing_resources_sum
     if top_ratio < 1.0:
-        return[]
+        return []
     elif top_ratio < 1.5:
         c = generate_configuration_greedy_dfs(topo, sfc)
         if c:
@@ -141,8 +142,7 @@ def _generate_configurations_permutation(topo: nx.Graph, sfc: SFC):
             if time.time() - start > time_limit:
                 c = generate_configuration_greedy_dfs(topo, sfc)
                 if __debug__:
-                    print("timeout", sfc, len(configurations),
-                          top_ratio, c is not None)
+                    print("timeout", sfc, len(configurations), top_ratio, c is not None)
                 if c:
                     configurations.append(c)
                 return configurations
@@ -150,7 +150,7 @@ def _generate_configurations_permutation(topo: nx.Graph, sfc: SFC):
     return configurations
 
 
-time_limit = 3
+time_limit = .5
 route_limit = 15
 search_limit = 256 * 1024
 
@@ -202,7 +202,7 @@ def _generate_configurations_bfs(topo: nx.Graph, sfc: SFC) -> List[Configuration
 def _generate_configurations_one_machine_permutation(topo: nx.Graph, sfc: SFC) -> List[Configuration]:
     configurations = []
     servers = [node for node in topo.nodes if topo.nodes[node]
-               ['computing_resource'] >= sfc.computing_resources_sum]
+    ['computing_resource'] >= sfc.computing_resources_sum]
     pa = ParaAnalyzer(sfc.vnf_list)
     if pa.opt_latency > sfc.latency:
         return []
@@ -275,11 +275,12 @@ def generate_configurations(topo: nx.Graph, sfc: SFC) -> List[Configuration]:
     return _generate_configurations_permutation(topo, sfc)
 
 
-def generate_configuration_greedy_dfs(topo: nx.Graph, sfc: SFC, origin_sfc: SFC = None, deep: int = 10, debug=False) -> Configuration:
+def generate_configuration_greedy_dfs(topo: nx.Graph, sfc: SFC, origin_sfc: SFC = None, deep: int = 10,
+                                      debug=False) -> Configuration:
     if config.state == config.Setting.parabox_naive and origin_sfc is None:
         origin_sfc = sfc
         tp = origin_sfc.throughput * \
-            _tp_parabox(-1, origin_sfc.pa.opt_strategy[:])
+             _tp_parabox(-1, origin_sfc.pa.opt_strategy[:])
         sfc = SFC(origin_sfc.vnf_list[:],
                   sfc.latency, tp, sfc.s, sfc.d, sfc.idx)
 
@@ -293,9 +294,9 @@ def generate_configuration_greedy_dfs(topo: nx.Graph, sfc: SFC, origin_sfc: SFC 
     if config.state == config.Setting.nfp_naive:
         sfc_min_requirement = sfc.computing_resources_sum
     servers = [node for node in topo.nodes if topo.nodes[node]
-               ['computing_resource'] >= sfc_min_requirement]
-    servers.sort(key=lambda s:  topo.nodes[s]
-                 ['computing_resource'], reverse=True)
+    ['computing_resource'] >= sfc_min_requirement]
+    servers.sort(key=lambda s: topo.nodes[s]
+    ['computing_resource'], reverse=True)
     # if [topo.nodes[s]['computing_resource'] for s in servers[:len(sfc.vnf_list)]] < sfc.computing_resources_sum:
     #     return None
 
@@ -312,7 +313,7 @@ def generate_configuration_greedy_dfs(topo: nx.Graph, sfc: SFC, origin_sfc: SFC 
             placed_res = 0
             place = []
             while sub_vnf_list and sub_vnf_list[0].computing_resource <= topo.nodes[server][
-                    'computing_resource']:
+                'computing_resource']:
                 placed_res += sub_vnf_list[0].computing_resource
                 topo.nodes[server]['computing_resource'] -= sub_vnf_list[0].computing_resource
                 place.append(len(route) - 1)
@@ -324,8 +325,8 @@ def generate_configuration_greedy_dfs(topo: nx.Graph, sfc: SFC, origin_sfc: SFC 
             if config.state == config.Setting.parabox_naive:
                 s_id = origin_sfc.vnf_list.index(sfc.vnf_list[0])
                 tp = origin_sfc.throughput * \
-                    _tp_parabox(s_id + len(place) - 1,
-                                origin_sfc.pa.opt_strategy[:])
+                     _tp_parabox(s_id + len(place) - 1,
+                                 origin_sfc.pa.opt_strategy[:])
 
             sub_sfc = SFC(sub_vnf_list, sfc.latency - route_latency,
                           tp, server, sfc.d, sfc.idx)

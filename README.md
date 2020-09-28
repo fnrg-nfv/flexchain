@@ -12,13 +12,13 @@ Some todo tips.
 
 ## EVAL
 
-todo: 
-1. VL2 fattree bcube 设小参数进行实验；
-    - difference of heutistic relatively in fattree and vl2
-    - bcube
-2. parabox 的configuration, add Parabox-Naive in comparison eval
+todo:
 
+1. VL2 fattree bcube 设小参数进行实验；
+   - difference of heutistic relatively in fattree and vl2
+   - bcube
+2. parabox 的 configuration, add Parabox-Naive in comparison eval
 
 ## Reference
 
-[python风格规范](https://zh-google-styleguide.readthedocs.io/en/latest/google-python-styleguide/python_style_rules/)
+[python 风格规范](https://zh-google-styleguide.readthedocs.io/en/latest/google-python-styleguide/python_style_rules/)

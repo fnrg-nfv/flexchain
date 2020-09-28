@@ -1,13 +1,10 @@
-import copy
+from progress.bar import PixelBar
+from pulp import value, LpMaximize, LpContinuous, LpVariable, LpProblem, lpSum
+from ttictoc import Timer
 
-# from pulp import *
-from pulp import value, LpContinuous, LpMaximize, LpContinuous, LpVariable, LpProblem, lpSum
-
+from para_placement.cg import generate_configurations, generate_configuration_greedy_dfs
 from para_placement.evaluation import *
 from para_placement.model import *
-from para_placement.cg import generate_configurations, generate_configuration_greedy_dfs
-from progress.bar import PixelBar
-from ttictoc import Timer
 
 
 def linear_programming(model: Model) -> (float, int, float, float):
@@ -47,7 +44,8 @@ def linear_programming(model: Model) -> (float, int, float, float):
             problem += lpSum(configuration.var * configuration.computing_resource[index]
                              for sfc in model.sfc_list
                              for configuration in sfc.configurations
-                             if index in configuration.computing_resource) <= info['computing_resource'], "CR_{}".format(index)
+                             if index in configuration.computing_resource) <= info[
+                           'computing_resource'], "CR_{}".format(index)
 
         # throughput constraints
         for start, end, info in model.topo.edges.data():
@@ -145,7 +143,7 @@ def rounding_greedy(model: Model):
                 sfc.accepted_configuration = None
 
     if not model.get_accepted_sfc_list():
-        greedy_para(model)
+        PARC(model)
 
 
 # recursively
@@ -157,7 +155,7 @@ def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (floa
     accepted_sfc_list = model.get_accepted_sfc_list()
 
     sub_model = Model(copy.deepcopy(model.topo), [
-                      sfc for sfc in model.sfc_list if sfc.accepted_configuration is None])
+        sfc for sfc in model.sfc_list if sfc.accepted_configuration is None])
     # computing resource reduction
     for index, info in sub_model.topo.nodes.data():
         info['computing_resource'] -= sum(sfc.accepted_configuration.computing_resource[index]
@@ -182,7 +180,7 @@ def rounding_to_integral(model: Model, rounding_method=rounding_greedy) -> (floa
     return obj_val, accept_sfc_number, latency, model.compute_resource_utilization()
 
 
-def rorp(model: Model):
+def ROR(model: Model):
     return rounding_to_integral(model, rounding_one)
 
 
@@ -216,7 +214,7 @@ def is_configuration_valid(topo, sfc, configuration, debug=False):
         edge = (start, end)
         if edge in configuration.edges:
             topo.edges.get(edge)['bandwidth'] -= sfc.throughput * \
-                configuration.edges[edge]
+                                                 configuration.edges[edge]
 
     return True
 
@@ -252,7 +250,7 @@ def greedy_dc(model: Model) -> (float, int, float, float):
     return obj_val, accept_sfc_number, latency, model.compute_resource_utilization()
 
 
-def greedy_para(model: Model):
+def PARC(model: Model):
     """
         1. Sort SFCs by its computing resources in the ascending order.
         2. For every sfc, compute its merged chain.
@@ -276,7 +274,7 @@ def greedy_para(model: Model):
 
             optimal_config = generate_configuration_greedy_dfs(
                 topo, optimal_sfc)
-            if optimal_config:   # generate origin "place" from the merged "place"
+            if optimal_config:  # generate origin "place" from the merged "place"
                 merged_vnf_index = 0
                 place = [optimal_config.place[0]]
                 for para in sfc.pa.opt_strategy:
@@ -300,12 +298,6 @@ def greedy_para(model: Model):
     obj_val = objective_value(model)
     accept_sfc_number = len(model.get_accepted_sfc_list())
     latency = average_latency(model)
-    print("Objective Value: {} ({}, {}, {})".format(
-        obj_val, evaluate(model), accept_sfc_number, latency))
+    print("Objective Value: {} ({}, {}, {}, {})".format(
+        obj_val, evaluate(model), accept_sfc_number, latency, model.compute_resource_utilization()))
     return obj_val, accept_sfc_number, latency, model.compute_resource_utilization()
-
-# genetic algorithm (not necessary)
-
-
-def ga(model: Model):
-    pass

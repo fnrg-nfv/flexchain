@@ -1,5 +1,5 @@
+import copy
 import heapq
-import sys
 import pickle
 import random
 import string
@@ -32,47 +32,75 @@ class VNF(BaseObject):
     def __str__(self):
         return "(%f, %d, %s, %s)" % (self.latency, self.computing_resource, self.read_fields, self.write_fields)
 
-    @staticmethod
-    def para_merge(vnf1, vnf2):
-        merged = VNF(max(vnf1.latency, vnf2.latency),
-                     vnf1.computing_resource + vnf2.computing_resource,
-                     set.union(vnf1.read_fields, vnf2.read_fields),
-                     set.union(vnf2.write_fields, vnf2.write_fields))
+    def para_merge(self, vnf):
+        merged = VNF(max(self.latency, vnf.latency),
+                     self.computing_resource + vnf.computing_resource,
+                     set.union(self.read_fields, vnf.read_fields),
+                     set.union(self.write_fields, vnf.write_fields))
         return merged
 
-    @staticmethod
-    def parallelizable_analysis(vnf1, vnf2):
+    def can_run_in_parallel(self, vnf):
         """Analysis whether two vnf can execute parallelism.
 
         Returns:
-        0 for packet copy
-        1 for no need packet copy
-        -1 for cannot parallelism
+        0: need packet copy
+        1: don't need packet copy
+        -1: cannot run in parallel
         """
-        nf1_read_fields = vnf1.read_fields
-        nf1_write_fields = vnf1.write_fields
-        nf2_read_fields = vnf2.read_fields
-        nf2_write_fields = vnf2.write_fields
+        nf1_read_fields = self.read_fields
+        nf1_write_fields = self.write_fields
+        nf2_read_fields = vnf.read_fields
+        nf2_write_fields = vnf.write_fields
 
-        # analyse read after write
+        # analyze read after write
         for fields1 in nf1_write_fields:
             for fields2 in nf2_read_fields:
                 if fields1 == fields2:
                     return -1  # cannot parallelism
 
-        # analyse write after read
+        # analyze write after read
         for fields1 in nf1_read_fields:
             for fields2 in nf2_write_fields:
                 if fields1 == fields2:
                     return 0  # need packet copy
 
-        # analyse write after write
+        # analyze write after write
         for fields1 in nf1_write_fields:
             for fields2 in nf2_write_fields:
                 if fields1 == fields2:
                     return 0  # need packet copy
 
         return 1  # perfect parallelism
+
+
+class SimpleVNF(VNF):
+    def __init__(self, latency: float, computing_resource: int):
+        VNF.__init__(self, latency, computing_resource)
+        self.paraDict = dict()
+
+    def para_merge(self, vnf):
+        ret = SimpleVNF(max(self.latency, vnf.latency),
+                        self.computing_resource + vnf.computing_resource)
+
+        ret.paraDict = self.paraDict.copy()
+        for key in vnf.paraDict:
+            a = ret.paraDict[key]
+            b = vnf.paraDict[key]
+            ret.paraDict[key] = min(a, b)
+
+        return ret
+
+    def can_run_in_parallel(self, vnf):
+        """Analysis whether two vnf can execute parallelism.
+
+        Returns:
+        0: need packet copy
+        1: don't need packet copy
+        -1: cannot run in parallel
+        """
+        if vnf in self.paraDict:
+            return self.paraDict[vnf]
+        return -1
 
 
 class SFC(BaseObject):
@@ -90,11 +118,12 @@ class SFC(BaseObject):
 
         self.pa = ParaAnalyzer(self.vnf_list)
 
-        self.accepted_configuration: Configuration = None
         self.configurations: List[Configuration] = []
+        self.accepted_configuration: Configuration = None
 
     def __str__(self):
-        return "({}, {}, {}, {}->{}, pa:{})".format(self.vnf_list, self.latency, self.throughput, self.s, self.d, self.pa)
+        return "({}, {}, {}, {}->{}, pa:{})".format(self.vnf_list, self.latency, self.throughput, self.s, self.d,
+                                                    self.pa)
 
 
 class Model(BaseObject):
@@ -104,7 +133,8 @@ class Model(BaseObject):
 
     def __str__(self):
         return "<{}>\tState: {}\tnodes: {}\tservers: {}\tedges: {}\tSFCs: {}".format(
-            self.topo.name, config.state, len(self.topo.nodes), len(self.servers()), len(self.topo.edges), len(self.sfc_list))
+            self.topo.name, config.state, len(self.topo.nodes), len(self.servers()), len(self.topo.edges),
+            len(self.sfc_list))
 
     def servers(self):
         return [n for n in self.topo.nodes if self.topo.nodes[n]['computing_resource'] > 0]
@@ -151,7 +181,7 @@ class Model(BaseObject):
                             "C {}: {}\t{}\n".format(configuration.name, configuration.var.varValue, configuration))
             output.close()
 
-    def get_accepted_sfc_list(self):
+    def get_accepted_sfc_list(self) -> List[SFC]:
         return list(filter(lambda s: s.accepted_configuration is not None, self.sfc_list))
 
     def clear(self):
@@ -180,7 +210,7 @@ class Model(BaseObject):
                 for sfc in accepted_sfc_list:
                     if edge in sfc.accepted_configuration.edges:
                         consumption += sfc.accepted_configuration.edges[edge] * \
-                            sfc.throughput
+                                       sfc.throughput
                 print(edge, "{:.2f}/{}".format(consumption, self.topo.edges.get(edge)['bandwidth']),
                       "{:.2f}%".format(consumption / self.topo.edges.get(edge)['bandwidth'] * 100))
 
@@ -190,6 +220,39 @@ class Model(BaseObject):
         capacity = sum(self.topo.nodes[node]['computing_resource']
                        for node in self.topo.nodes)
         return usage / capacity
+
+    def print_sfc_list_feature(self):
+        rej = para = acc = 0
+        sum_lat = sum_opt_lat = 0
+        for sfc in self.sfc_list:
+            sum_lat += sfc.latency_sum
+            sum_opt_lat += sfc.pa.opt_latency
+            if sfc.latency < sfc.pa.opt_latency:
+                rej += 1
+            elif sfc.latency_sum < sfc.latency:
+                acc += 1
+            else:
+                para += 1
+        print("rej:", rej, "para:", para, "acc:", acc)
+        print("sum lat avg:", sum_lat / len(self.sfc_list))
+        print("opt lat avg:", sum_opt_lat / len(self.sfc_list))
+
+    def reduce(self):
+        accepted_sfc_list = self.get_accepted_sfc_list()
+
+        sub_model = Model(copy.deepcopy(self.topo), [])
+        # computing resource reduction
+        for index, info in sub_model.topo.nodes.data():
+            info['computing_resource'] -= sum(sfc.accepted_configuration.computing_resource[index]
+                                              for sfc in accepted_sfc_list
+                                              if index in sfc.accepted_configuration.computing_resource)
+        # throughput reduction
+        for start, end, info in sub_model.topo.edges.data():
+            info['bandwidth'] -= sum(sfc.throughput * sfc.accepted_configuration.edges[(start, end)]
+                                     for sfc in accepted_sfc_list
+                                     if (start, end) in sfc.accepted_configuration.edges)
+
+        return sub_model
 
 
 # TODO: readable fields and writeable fields should be weighted or sth else.
@@ -202,15 +265,64 @@ def generate_vnf_set(size: int = 30) -> List[VNF]:
         computing_resource = SFC_CONFIG.vnf_cpu()
         read_fields = set()
         for item in readable_fields:
-            if random.choice([True, False, False]):
+            if random.choice([True, False, False, False]):
                 read_fields.add(item)
         write_fields = set()
         for item in writeable_fields:
-            if random.choice([True, False, False]):
+            if random.choice([True, False, False, False]):
                 write_fields.add(item)
         vnf_list.append(VNF(latency, computing_resource,
                             read_fields, write_fields))
     return vnf_list
+
+
+def generate_vnf_set_with_para_prob(size: int = 30, prob: float = .5) -> List[VNF]:
+    vnf_list = []
+    for i in range(size):
+        vnf_list.append(SimpleVNF(SFC_CONFIG.vnf_latency(), SFC_CONFIG.vnf_cpu()))
+    total_pairs = size * (size - 1) / 2 + size
+    para_pairs = int(total_pairs * prob)
+
+    for i in range(size):
+        vnf1 = vnf_list[i]
+        for j in range(i, size):
+            vnf2 = vnf_list[j]
+            para = -1
+            if random.random() < (para_pairs / total_pairs):
+                para = 1
+                para_pairs -= 1
+            vnf1.paraDict[vnf2] = para
+            vnf2.paraDict[vnf1] = para
+            total_pairs -= 1
+
+    return vnf_list
+
+
+def update_vnf_set_with_para_prob(vnf_list, prob_inc: float = .2):
+    size = len(vnf_list)
+    total_pairs = size * (size - 1) / 2 + size
+    para_pairs = int(total_pairs * prob_inc)
+
+    for i in range(size):
+        vnf1 = vnf_list[i]
+        for j in range(i, size):
+            vnf2 = vnf_list[j]
+            if vnf1.paraDict[vnf2] >= 0:
+                total_pairs -= 1
+
+    for i in range(size):
+        vnf1 = vnf_list[i]
+        for j in range(i, size):
+            vnf2 = vnf_list[j]
+            para = -1
+            if vnf1.paraDict[vnf2] >= 0:
+                continue
+            if random.random() < (para_pairs / total_pairs):
+                para_pairs -= 1
+                para = 1
+            vnf1.paraDict[vnf2] = para
+            vnf2.paraDict[vnf1] = para
+            total_pairs -= 1
 
 
 # random generate 100 service function chains
@@ -219,6 +331,7 @@ def generate_vnf_set(size: int = 30) -> List[VNF]:
 # vnf latency: 0.2~2 ms
 # sfc latency demand: 10~30 ms
 # sfc throughput demand: 32~128 Mbps todo 50~500
+
 
 def generate_sfc_list_old(topo: nx.Graph, vnf_set: List[VNF], size=100, base_idx=0):
     ret = []
@@ -283,10 +396,10 @@ class Configuration(BaseObject):
                         place_list_list[-1].append(next_place)
                     else:
                         place_list_list.append([next_place])
-            place_list_list.append([len(self.route)-1])
+            place_list_list.append([len(self.route) - 1])
 
             for place_list1, place_list2 in pairwise(place_list_list):
-                for sub_route in [self.route[i:j+1] for i in place_list1 for j in place_list2]:
+                for sub_route in [self.route[i:j + 1] for i in place_list1 for j in place_list2]:
                     for n1, n2 in pairwise(sub_route):
                         self.edges[(n1, n2)] = self.edges.setdefault(
                             (n1, n2), 0) + 1
@@ -306,7 +419,7 @@ class Configuration(BaseObject):
 
     # latency (normal & para)
     def get_latency(self) -> float:
-        if config.state == config.Setting.normal:
+        if config.state == config.Setting.flexchain:
             return self.route_latency + self.para_analyze()
         elif config.state == config.Setting.parabox_naive:
             return self.route_latency + self.sfc.pa.opt_latency
@@ -325,7 +438,7 @@ class Configuration(BaseObject):
 
     def para_analyze(self):
         """
-        Get the optimal parallel execution situation using dfs
+        Get the optimal parallel execution situation
         """
         vnf_list_list = [[self.sfc.vnf_list[0]]]
         for i in range(len(self.place) - 1):
@@ -358,7 +471,7 @@ class ParaAnalyzer:
             for vnf in vnfs, find the optimal parallel strategy, and save it in "strategy".
         NOTE:
             len(strategy) == len(vnf_list) - 1
-            strategy[i] indicates whether vnfs[i] and vnfs[i+1] work in parallel. 0 for no, 1 for yes
+            strategy[i] indicates whether vnfs[i] and vnfs[i+1] work in parallel. 0 for no, 1 for yes.
         """
 
         if index >= len(vnf_list) - 1:  # dfs endpoint
@@ -367,11 +480,11 @@ class ParaAnalyzer:
                 self.opt_latency, self.opt_strategy, self.opt_vnf_list = latency, strategy, vnf_list
         else:
             # branch 1: parallelizable
-            if VNF.parallelizable_analysis(vnf_list[index], vnf_list[index + 1]) >= 0:
+            if vnf_list[index].can_run_in_parallel(vnf_list[index + 1]) >= 0:
                 new_vnf_list = vnf_list[:]
                 vnf1 = new_vnf_list.pop(index)
                 vnf2 = new_vnf_list.pop(index)
-                merged_vnf = VNF.para_merge(vnf1, vnf2)
+                merged_vnf = vnf1.para_merge(vnf2)
                 new_vnf_list.insert(index, merged_vnf)
 
                 new_strategy = strategy[:]

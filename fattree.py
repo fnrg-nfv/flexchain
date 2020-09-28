@@ -8,7 +8,7 @@ import os
 
 def main():
     # parameter init
-    config.state = config.Setting.normal
+    config.state = config.Setting.flexchain
     config.GC_BFS = False
 
     # model init
@@ -39,7 +39,7 @@ def iteration(model: Model):
     result = {}
 
     model.clear()
-    result['heuristic'] = greedy_para(model)
+    result['heuristic'] = PARC(model)
 
     # model.clear()
     # config.K = 4096
@@ -48,7 +48,7 @@ def iteration(model: Model):
     model.clear()
     config.K = 1024
     result['optimal'] = linear_programming(model)
-    result['RORP'] = rorp(model)
+    result['RORP'] = ROR(model)
 
     print_dict_result(result, model)
     return result

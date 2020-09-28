@@ -1,26 +1,24 @@
 #!/usr/bin/python3
-import collections
-import os
 import glob
-import pickle
+import os
 from itertools import cycle
+
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
-from scipy.interpolate import make_interp_spline, BSpline
 
 from para_placement.helper import *
 
 font = {
     'family': 'Times New Roman',
     'weight': 'normal',
-    'size':   17,
+    'size': 17,
 }
 
 legendfont = {
     'family': 'Times New Roman',
     'weight': 'normal',
-    'size':   14,
+    'size': 14,
 }
 
 
@@ -55,7 +53,8 @@ def main_compare():
     print(data)
 
     draw_plot(x, data, save_file_name='compare_sfc', legends=[
-              'Chain w/o parallelism', 'Parabox+naïve', 'NFP+naïve', 'FlexChain+PARC'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^')
+        'Chain w/o parallelism', 'Parabox+naïve', 'NFP+naïve', 'FlexChain+PARC'], colors='ymcr',
+              linestyles=[':', ':', ':', '--'], markers='h x^')
 
 
 def main_compare_latency():
@@ -140,7 +139,7 @@ def main_fattree():
 
 
 def main_bcube():
-    sizes = [20 * (i+1) for i in range(10)]
+    sizes = [20 * (i + 1) for i in range(10)]
     result = {}
     for size in sizes:
         filenames = glob.glob("./results/Bcube/{}_*".format(size))
@@ -170,8 +169,8 @@ def main_bcube():
                                 'PARC'], save_file_name='bcube')
 
 
+# what's this???
 def main_bcube_grtt():
-
     filenames = glob.glob("./results/Bcube/total_grp256_*")
     filenames.sort()
     result = load_and_print(filenames[-1])
@@ -219,12 +218,14 @@ def main_k():
 
     rorp_y = np.array([result[i]['RORP'][0] for i in x])
     rorp_time_y = np.array([result[i]['RORP time'] for i in x])
-    print(x, rorp_y,  rorp_time_y)
+    print(x, rorp_y, rorp_time_y)
 
-    fig, ax1 = plt.subplots()
+    fig, ax1 = plt.subplots(figsize=(6.4, 4.8))
 
     color = 'tab:red'
-    ax1.set_xlabel("k", font)
+    k_font = font.copy()
+    k_font['style'] = 'italic'
+    ax1.set_xlabel("k", k_font)
     ax1.set_ylabel("Number of Accepted Requests", font, color=color)
     ax1.set_ylim(60, 100)
     l1 = ax1.plot(x, rorp_y, color=color, linestyle='--',
@@ -247,11 +248,11 @@ def main_k():
     ax1.yaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))
     ax2.yaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))
 
-    lns = l1+l2
+    lns = l1 + l2
     labs = [l.get_label() for l in lns]
     ax1.legend(lns, labs, loc='lower right', prop=legendfont)
 
-    fig.tight_layout()
+    # fig.tight_layout()
     plt.grid(linestyle='--')
 
     if input("Save this eps?(y/N)") == 'y':
@@ -306,11 +307,13 @@ def draw_plot(x, data,
               x2ticks=True,
               x_formatter="%d",
               y_formatter="%d",
-              legend_bbox_to_anchor=None):
-
+              legend_bbox_to_anchor=None,
+              show_legend=True,
+              figsize=(6.4, 4.8)):
     color_cy = cycle(colors)
     marker_cy = cycle(markers)
     linestyle_cy = cycle(linestyles)
+    plt.figure(figsize=figsize)
     if not legends:
         legends = [k for k in data]
     for legend in legends:
@@ -325,10 +328,11 @@ def draw_plot(x, data,
     plt.xlabel(xlabel, font)
     plt.ylabel(ylabel, font)
     plt.title(title)
-    if legend_bbox_to_anchor:
-        plt.legend(bbox_to_anchor=legend_bbox_to_anchor, prop=legendfont)
-    else:
-        plt.legend(prop=legendfont)
+    if show_legend:
+        if legend_bbox_to_anchor:
+            plt.legend(bbox_to_anchor=legend_bbox_to_anchor, prop=legendfont)
+        else:
+            plt.legend(prop=legendfont)
 
     ax = plt.gca()
     ax.yaxis.grid(True, linestyle='--')
@@ -409,5 +413,66 @@ def draw_plot_bar(
     plt.show()
 
 
+def main_para_prob():
+    filenames = glob.glob("./results/para_prob/*")
+    filenames.sort()
+    result = load_and_print(filenames[-1])
+    x, data = transfer_result(result, index=0)
+    data['Base'] = [data['RORP'][0]] * len(data['RORP'])
+    data['ROR'] = data['RORP']
+    data['PARC'] = data['heuristic']
+    del data['RORP']
+    del data['heuristic']
+    for i in range(len(x)):
+        x[i] = round(x[i], 1)
+    print(x, data)
+    draw_plot(x, data, save_file_name='para_prob', x_formatter="%.1f", xlabel='Parallel Probability between NFs',
+              colors='krg', markers=' ^o', linestyles=['-', '--', ':'])
+
+
+def get_offline_data():
+    filenames = glob.glob("./results/VL2/total*")
+    filenames.sort()
+    result = load_and_print(filenames[-2])
+    x, data = transfer_result(result, index=0)
+    result2 = load_and_print(filenames[-1])
+    x2, data2 = transfer_result(result2, index=0)
+    data.update(data2)
+    add_zero(x, data)
+    data['ROR'] = data['RORP']
+    data['PARC'] = data['heuristic']
+    del data['optimal']
+    del data['RORP']
+    del data['heuristic']
+    for key in data:
+        data[key] = data[key][::2]
+    return data
+
+
+def main_online(alg='PARC'):
+    filenames = glob.glob("./results/online/*")
+    filenames.sort()
+    result = load_and_print(filenames[-1])
+    data = {}
+    for batch_size in result[alg]:
+        data[alg + '-' + str(batch_size)] = result[alg][batch_size]
+
+    x = [i for i in range(0, 201, 40)]
+    for key in data:
+        new_entry = []
+        cur = 0
+        x_i = 0
+        for size in data[key]:
+            if size >= x[x_i]:
+                new_entry.append(cur)
+                x_i += 1
+            cur += data[key][size]
+        new_entry.append(cur)
+        data[key] = new_entry
+    data[alg + '-offline'] = get_offline_data()[alg]
+    draw_plot(x, data, save_file_name='online-' + alg, linestyles=[':', ':', ':', '--'], markers='s^x ', colors='bmcr')
+
+
 if __name__ == '__main__':
-    main_compare_resource()
+    main_online(alg='PARC')
+    main_online(alg='ROR')
