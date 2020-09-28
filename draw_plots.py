@@ -154,6 +154,7 @@ def main_bcube():
                                 'PARC'], save_file_name='bcube')
 
 
+# what's this???
 def main_bcube_grtt():
     filenames = glob.glob("./results/Bcube/total_grp256_*")
     filenames.sort()
