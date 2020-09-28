@@ -102,7 +102,7 @@ def main_compare_resource():
             'Chain w/o parallelism',
             'FlexChain+PARC'
         ],
-        colors=colors, y_formatter='%.2f')
+        colors=colors, y_formatter='%.2f', figsize=(6.4, 4.3))
 
 
 def main_vl2():
@@ -365,7 +365,8 @@ def draw_plot_bar(
         x2ticks=True,
         x_formatter="%d",
         y_formatter="%d",
-        legend_bbox_to_anchor=None):
+        legend_bbox_to_anchor=None,
+        figsize=(6.4, 4.8)):
 
     color_cy = cycle(colors)
     if not legends:
@@ -376,6 +377,7 @@ def draw_plot_bar(
     bias = width*(len(legends)-1)/2
     basepos = pos-bias
 
+    plt.figure(figsize=figsize)
     i = 0
     for legend in legends:
         d = np.array(data[legend])
@@ -474,5 +476,4 @@ def main_online(alg='PARC'):
 
 
 if __name__ == '__main__':
-    main_online(alg='PARC')
-    main_online(alg='ROR')
+    main_compare_resource()
