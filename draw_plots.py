@@ -70,23 +70,40 @@ def main_compare_latency():
 
     print(data)
 
-    draw_plot(x, data, ylabel='Average SFC Latency (ms)', save_file_name='compare_latency', legends=[
-              'Chain w/o parallelism', 'Parabox+naïve', 'NFP+naïve', 'FlexChain+PARC'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^', y_formatter='%.2f')
+    draw_plot(x, data, ylabel='Average SFC Latency (ms)',
+              save_file_name='compare_latency',
+              legends=['Chain w/o parallelism',
+                       'Parabox+naïve', 'NFP+naïve', 'FlexChain+PARC'],
+              colors='ymcr', linestyles=[':', ':', ':', '--'], markers='h x^', y_formatter='%.2f')
+
 
 def main_compare_resource():
     filenames = glob.glob("./results/compare/total*")
     filenames.sort()
     result = load_and_print(filenames[-1])
 
-    x, data = transfer_result(result, 2)
+    colors = np.array([
+        (250, 120,  78),  # red
+        (200, 188, 245),  # purple
+        (88, 184, 148),  # blue
+        (255, 212,  37)   # yellow
+    ])/255
+
+    x, data = transfer_result(result, 3)
     data['FlexChain+PARC'] = data['heuristic']
     data['Parabox+naïve'] = data['PARABOX-naïve']
     data['NFP+naïve'] = data['NFP-naïve']
 
-    # print(data)
-
-    # draw_plot(x, data, ylabel='Average SFC Latency (ms)', save_file_name='compare_latency', legends=[
-    #           'Chain w/o parallelism', 'Parabox+naïve', 'NFP+naïve', 'FlexChain+PARC'], colors='ymcr', linestyles=[':', ':',  ':', '--'], markers='h x^', y_formatter='%.2f')
+    draw_plot_bar(
+        x, data, ylabel='Resource Utilization',
+        save_file_name='compare_resource',
+        legends=[
+            'NFP+naïve',
+            'Parabox+naïve',
+            'Chain w/o parallelism',
+            'FlexChain+PARC'
+        ],
+        colors=colors, y_formatter='%.2f')
 
 
 def main_vl2():
@@ -297,8 +314,10 @@ def draw_plot(x, data,
     if not legends:
         legends = [k for k in data]
     for legend in legends:
-        plt.plot(x, data[legend], marker=next(marker_cy), label=legend, color=next(color_cy), linewidth=2, ms=8,
-                 linestyle=next(linestyle_cy))
+        plt.plot(
+            x, data[legend], marker=next(marker_cy), label=legend, color=next(color_cy), linewidth=2, ms=8,
+            linestyle=next(linestyle_cy)
+        )
 
     if x2ticks:
         plt.xticks(x)
@@ -325,7 +344,67 @@ def draw_plot(x, data,
             if input("Overwrite File?(y/N)") != "y":
                 write = False
         if write:
-            plt.savefig(save_file_name, format='eps')
+            plt.savefig(save_file_name, format='eps', bbox_inches='tight')
+
+    plt.show()
+
+    plt.show()
+
+
+def draw_plot_bar(
+        x, data, legends,
+        save_file_name='',
+        xlabel='Number of SFC Requests',
+        ylabel="Number of Accepted Requests",
+        title='',
+        colors='brgcmk',
+        x2ticks=True,
+        x_formatter="%d",
+        y_formatter="%d",
+        legend_bbox_to_anchor=None):
+
+    color_cy = cycle(colors)
+    if not legends:
+        legends = [k for k in data]
+
+    pos = np.arange(len(x))  # the label locations
+    width = 0.2  # the width of the bars
+    bias = width*(len(legends)-1)/2
+    basepos = pos-bias
+
+    i = 0
+    for legend in legends:
+        d = np.array(data[legend])
+        plt.bar(basepos + i*width, d * 100, label=legend,
+                width=width, color=next(color_cy), alpha=1)
+        i += 1
+
+    plt.xlabel(xlabel, font)
+    plt.ylabel(ylabel, font)
+    plt.title(title)
+    if legend_bbox_to_anchor:
+        plt.legend(bbox_to_anchor=legend_bbox_to_anchor, prop=legendfont)
+    else:
+        plt.legend(prop=legendfont)
+
+    ax = plt.gca()
+    ax.yaxis.grid(True, linestyle='--')
+    ax.set_axisbelow(True)
+    ax.set_xticklabels(x, font)
+    plt.xticks(pos, x)
+    ax.set_yticklabels(ax.get_yticks(), font)
+    # ax.xaxis.set_major_formatter(ticker.FormatStrFormatter(x_formatter))
+    ax.yaxis.set_major_formatter(ticker.PercentFormatter())
+    ax.set_ylim(0, 100)
+
+    if save_file_name:
+        write = True
+        save_file_name = './eps/{}.eps'.format(save_file_name)
+        if os.path.exists(save_file_name):
+            if input("Overwrite File?(y/N)") != "y":
+                write = False
+        if write:
+            plt.savefig(save_file_name, format='eps', bbox_inches='tight')
 
     plt.show()
 
