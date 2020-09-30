@@ -6,6 +6,23 @@ from para_placement.helper import *
 from para_placement.solution import *
 
 
+def main2():
+    model = load_file("testcase/fattree")
+    sfc_list = model.sfc_list
+    vnf_set = set()
+    for sfc in sfc_list:
+        for vnf in sfc.vnf_list:
+            vnf_set.add(vnf)
+    vnf_list = list(vnf_set)
+    total_pairs = para_pairs = 0
+    for i in range(len(vnf_list)):
+        for j in range(i + 1, len(vnf_list)):
+            total_pairs += 1
+            if vnf_list[i].can_run_in_parallel(vnf_list[j]) >= 0:
+                para_pairs += 1
+    print(para_pairs, total_pairs, para_pairs / total_pairs)
+
+
 def main():
     config.state = config.Setting.flexchain
     config.GC_BFS = False
@@ -51,4 +68,4 @@ def iteration(model: Model):
 
 if __name__ == "__main__":
     with Timer(verbose_msg=f'[test] Elapsed time: {{}}'):
-        main()
+        main2()
